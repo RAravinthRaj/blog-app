@@ -1,4 +1,3 @@
-//@ts-nocheck
 import { SetStateAction, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,7 +18,7 @@ import {
   Heart,
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
-import { Navbar } from "../../components/Navbar";
+import { Navbar, Footer } from "../../components";
 import { toast } from "react-toastify";
 import { IoSendSharp } from "react-icons/io5";
 
@@ -712,16 +711,15 @@ export const BlogApp = () => {
   );
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       <Navbar />
 
-      <div className="container mx-auto  bg-gray-50 pt-20 px-4">
+      <div className="container mx-auto bg-gray-50 pt-20 px-4">
         <div className="flex flex-col lg:flex-row gap-8">
           <_MobileSidebar />
-
           <DesktopSidebar />
 
-          <div className="flex-1  from-blue-800 via-indigo-700 to-purple-800">
+          <div className="flex-1 from-blue-800 via-indigo-700 to-purple-800">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <MainContent />
               <TrendingSidebar />
@@ -729,6 +727,9 @@ export const BlogApp = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer at the bottom */}
+      <Footer />
     </div>
   );
 };

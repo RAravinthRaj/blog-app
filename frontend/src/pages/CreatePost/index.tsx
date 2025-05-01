@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Image, X, Check, AlertCircle, PenLine } from "lucide-react";
-import { Navbar } from "../../components";
+import { Footer, Navbar } from "../../components";
 
 // Component for the create post form
 const CreatePost = () => {
@@ -618,6 +618,9 @@ const CreatePost = () => {
           )}
         </AnimatePresence>
       </motion.div>
+      <div>
+        <Footer />
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { MessageSquare, Share2, Bookmark, Heart, Send } from "lucide-react";
-import { Navbar } from "../../components";
+import { Footer, Navbar } from "../../components";
 
 function Post() {
   const [newComment, setNewComment] = useState("");
@@ -257,6 +257,9 @@ function Post() {
             </div>
           )}
         </div>
+      </div>
+      <div>
+        <Footer />
       </div>
     </div>
   );

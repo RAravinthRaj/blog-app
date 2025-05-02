@@ -6,7 +6,7 @@ export const Navbar = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-black/50 text-white backdrop-blur-md z-30 shadow-sm">
       <div className="container mx-auto px-4 py-2 flex justify-between items-center">
-        <Link className="flex items-center gap-2 " to="/">
+        <Link className="flex items-center gap-2 " to="/home">
           <img className="h-10 w-13" src={logo} />
           <span className="font-bold text-xl">BlogApp</span>
         </Link>

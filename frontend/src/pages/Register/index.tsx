@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { login } from "../../api";
+import { register } from "../../api"; // Import the correct register API function
 
 interface FormData {
   username: string;
@@ -13,13 +13,12 @@ interface FormData {
 const Register = () => {
   const navigate = useNavigate();
   const {
-    register,
+    register: formRegister,
     handleSubmit,
-
     formState: { errors },
   } = useForm<FormData>();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -29,12 +28,17 @@ const Register = () => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     setError("");
+    if (data.password !== data.confirmPassword) {
+      setError("Passwords do not match.");
+      setIsSubmitting(false);
+      return;
+    }
     try {
-      const response = await login(data);
+      const response = await register(data); // Use the register function from your API
       localStorage.setItem("token", response.data.token);
-      navigate("/");
+      navigate("/home"); // Redirect to the home page after successful registration
     } catch (error) {
-      setError("Invalid username or password");
+      setError("Error occurred during registration.");
     } finally {
       setIsSubmitting(false);
     }
@@ -44,187 +48,8 @@ const Register = () => {
     setShowPassword(!showPassword);
   };
 
-  const _toggleconfirmPasswordVisibility = () => {
+  const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  const _renderNewPassword = () => {
-    return (
-      <div className="space-y-4">
-        {/* New Password */}
-        <div className="space-y-2">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
-          >
-            New Password
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {/* Lock Icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-            </div>
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition duration-200"
-              placeholder="Enter your new password"
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            {/* Toggle Password Visibility */}
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
-              >
-                {showPassword ? (
-                  /* Eye Off Icon */
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59"
-                    />
-                  </svg>
-                ) : (
-                  /* Eye Icon */
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Confirm Password */}
-        <div className="space-y-2">
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Confirm New Password
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {/* Lock Icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-            </div>
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              id="confirmPassword"
-              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition duration-200"
-              placeholder="Confirm your new password"
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            {/* Toggle Password Visibility */}
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <button
-                type="button"
-                onClick={_toggleconfirmPasswordVisibility}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
-              >
-                {showConfirmPassword ? (
-                  /* Eye Off Icon */
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59"
-                    />
-                  </svg>
-                ) : (
-                  /* Eye Icon */
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="text-red-500 text-sm ">
-            {newPassword !== confirmPassword && "Password Doesn't Matches"}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -253,7 +78,9 @@ const Register = () => {
             <input
               id="username"
               type="text"
-              {...register("username", { required: "Username is required" })}
+              {...formRegister("username", {
+                required: "Username is required",
+              })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {errors.username && (
@@ -274,7 +101,7 @@ const Register = () => {
             <input
               id="email"
               type="email"
-              {...register("email", {
+              {...formRegister("email", {
                 required: "Email is required",
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -291,8 +118,61 @@ const Register = () => {
           </div>
 
           {/* Password */}
+          <div className="space-y-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Password
+            </label>
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              {...formRegister("password", {
+                required: "Password is required",
+              })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
 
-          {_renderNewPassword()}
+          {/* Confirm Password */}
+          <div className="space-y-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Confirm Password
+            </label>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmPassword"
+              {...formRegister("confirmPassword", {
+                required: "Confirm Password is required",
+              })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Confirm your password"
+            />
+            <button
+              type="button"
+              onClick={toggleConfirmPasswordVisibility}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showConfirmPassword ? "Hide" : "Show"}
+            </button>
+            {newPassword !== confirmPassword && (
+              <p className="text-sm text-red-600 mt-1">
+                Passwords do not match
+              </p>
+            )}
+          </div>
 
           {/* Submit */}
           <button

@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import profile from "../../assets/profile.png";
-import { Footer } from "../../components";
+import { Navbar, Footer } from "../../components";
+import { Link } from "react-router-dom";
+import { LogOutIcon } from "lucide-react";
+import { toast } from "react-toastify";
 
-function Profile() {
+const Profile = () => {
   const [settings, setSettings] = useState({
     emailNotifications: true,
     profileVisibility: "public",
@@ -130,8 +133,15 @@ function Profile() {
     );
   }
 
+  const _logout = () => {
+    toast.success("Logout Successfully");
+  };
+
   return (
     <div>
+      <div className="mb-20">
+        <Navbar />
+      </div>
       <div className="max-w-4xl mx-auto my-10 px-4">
         {/* Profile Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-10">
@@ -357,10 +367,21 @@ function Profile() {
             ))}
           </div>
         </div>
+        <div
+          className="inline-flex items-center space-x-2 bg-gradient-to-r from-red-500 to-red-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          onClick={() => {
+            _logout();
+          }}
+        >
+          <LogOutIcon size={20} className="text-white" />
+          <Link to="/" className="text-sm font-semibold tracking-wide">
+            Logout
+          </Link>
+        </div>
       </div>
       <Footer />
     </div>
   );
-}
+};
 
 export default Profile;

@@ -10,6 +10,12 @@ const api = axios.create({
   },
 });
 
+export const register = (userData: {
+  username: string;
+  email: string;
+  password: string;
+}) => api.post<User>("/auth/register", userData);
+
 export const getPosts = () => api.get<Post[]>("/posts");
 export const getPost = (id: number) => api.get<Post>(`/posts/${id}`);
 export const createPost = (post: Partial<Post>) =>
@@ -25,10 +31,5 @@ export const createComment = (postId: number, comment: Partial<Comment>) =>
 
 export const login = (credentials: { username: string; password: string }) =>
   api.post<{ token: string; user: User }>("/auth/login", credentials);
-export const register = (userData: {
-  username: string;
-  email: string;
-  password: string;
-}) => api.post<User>("/auth/register", userData);
 
 export const getCurrentUser = () => api.get<User>("/users/me");

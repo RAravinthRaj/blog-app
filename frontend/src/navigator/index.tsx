@@ -8,10 +8,10 @@ export const Navigator = () => {
     <BrowserRouter>
       <ToastContainer position="top-right" />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Register />} />
         <Route path="/createPost" element={<CreatePost />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/post" element={<Post />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>

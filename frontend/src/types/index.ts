@@ -1,4 +1,5 @@
 export interface User {
+  token(arg0: string, token: any): unknown;
   id: number;
   username: string;
   email: string;

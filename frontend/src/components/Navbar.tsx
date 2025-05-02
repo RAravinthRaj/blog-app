@@ -1,4 +1,4 @@
-import { UserIcon, UserPlusIcon } from "lucide-react";
+import { PlusIcon, UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 
@@ -13,18 +13,18 @@ export const Navbar = () => {
         <div className="hidden md:flex items-center space-x-4">
           <div className="flex space-x-6">
             <Link
-              to="/login"
+              to="/createPost"
               className="flex items-center space-x-2 p-3 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black transition-all duration-300"
             >
-              <UserIcon className="h-5 w-5  group-hover:text-black" />
-              <span className=" group-hover:text-white">Login</span>
+              <PlusIcon className="h-5 w-5  group-hover:text-black" />
+              <span className=" group-hover:text-white">Create Post</span>
             </Link>
             <Link
-              to="/signup"
+              to="/profile"
               className="flex items-center space-x-2 p-3 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black transition-all duration-300"
             >
-              <UserPlusIcon className="h-5 w-5 group-hover:text-black" />
-              <span className=" group-hover:text-white">Sign Up</span>
+              <UserIcon className="h-5 w-5 group-hover:text-black" />
+              <span className=" group-hover:text-white">Profile</span>
             </Link>
           </div>
         </div>

@@ -17,18 +17,13 @@ public class SignInService {
     @Autowired
     private SignUpRepository userRepository;
 
+    public Optional<SignUpModel> getUser(String email) {
+        return userRepository.findByEmail(email);
+    }
+
     public boolean validateUser(SignInRequest signInRequest) {
-        logger.info("Validating user with email: {}", signInRequest.getEmail());
-
-        Optional<SignUpModel> userOptional = userRepository.findByEmail(signInRequest.getEmail());
-
-        if (userOptional.isPresent()) {
-            SignUpModel user = userOptional.get();
-
-            return user.getPassword().equals(signInRequest.getPassword());
-        }
-
-        logger.warn("User with email {} not found", signInRequest.getEmail());
-        return false;
+        Optional<SignUpModel> userOpt = getUser(signInRequest.getEmail());
+        return userOpt.isPresent() &&
+                userOpt.get().getPassword().equals(signInRequest.getPassword());
     }
 }

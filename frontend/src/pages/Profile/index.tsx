@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import profile from "../../assets/profile.png";
 import { Navbar, Footer } from "../../components";
 import { Link } from "react-router-dom";
@@ -11,14 +11,6 @@ const Profile = () => {
     profileVisibility: "public",
   });
 
-  const user = {
-    username: "john_doe",
-    email: "john.doe@example.com",
-    avatar: "https://via.placeholder.com/128",
-    bio: "A passionate developer exploring the world of React, JavaScript, and full-stack development.",
-  };
-
-  // Sample post data
   const posts = [
     {
       id: 1,
@@ -75,6 +67,17 @@ const Profile = () => {
     },
   ];
 
+  const [username, setUserName] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    const storedEmail = localStorage.getItem("email");
+
+    if (storedUsername) setUserName(storedUsername);
+    if (storedEmail) setEmail(storedEmail);
+  }, []);
+
   const handleEmailNotificationsChange = () => {
     setSettings({
       ...settings,
@@ -91,47 +94,10 @@ const Profile = () => {
     console.log("Profile visibility set to:", event.target.value);
   };
 
-  // Format date to a more readable format
   const formatDate = (dateString: string | number | Date) => {
     const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined);
   };
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full">
-          <div className="text-center">
-            <div className="mb-6 inline-flex rounded-full bg-indigo-100 p-4">
-              <svg
-                className="h-10 w-10 text-indigo-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                ></path>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Authentication Required
-            </h2>
-            <p className="text-gray-600">
-              Please log in to view your profile information
-            </p>
-            <button className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition duration-300">
-              Sign In
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const _logout = () => {
     toast.success("Logout Successfully");
@@ -162,7 +128,7 @@ const Profile = () => {
           <div className="px-8 pb-8">
             {/* Profile Section */}
             <div className="flex flex-col items-center -mt-24">
-              <div className="p-1.5 z-30  rounded-full bg-white shadow-lg">
+              <div className="p-1.5 z-10  rounded-full bg-white shadow-lg">
                 <img
                   src={profile}
                   className="w-36 h-36 rounded-full object-cover"
@@ -170,23 +136,9 @@ const Profile = () => {
               </div>
 
               <h1 className="mt-6 text-3xl font-bold text-gray-800">
-                {user.username}
+                {username}
               </h1>
-              <p className="text-indigo-600 font-medium">{user.email}</p>
-
-              {user.bio && (
-                <div className="mt-5 text-center text-gray-600 max-w-lg">
-                  <p className="relative italic px-6">
-                    <span className="absolute top-0 left-0 text-4xl text-indigo-200">
-                      "
-                    </span>
-                    {user.bio}
-                    <span className="absolute bottom-0 right-0 text-4xl text-indigo-200">
-                      "
-                    </span>
-                  </p>
-                </div>
-              )}
+              <p className="text-indigo-600 font-medium">{email}</p>
             </div>
 
             {/* Settings Section */}
@@ -241,9 +193,19 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Action Button */}
-            <div className="mt-10 flex justify-end">
-              <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-300">
+            <div className="mt-10 flex justify-between space-x-2">
+              <div
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-red-500 to-red-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                onClick={() => {
+                  _logout();
+                }}
+              >
+                <LogOutIcon size={20} className="text-white" />
+                <Link to="/" className="text-sm font-semibold tracking-wide">
+                  Logout
+                </Link>
+              </div>
+              <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-300">
                 Save Changes
               </button>
             </div>
@@ -366,17 +328,6 @@ const Profile = () => {
               </div>
             ))}
           </div>
-        </div>
-        <div
-          className="inline-flex items-center space-x-2 bg-gradient-to-r from-red-500 to-red-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          onClick={() => {
-            _logout();
-          }}
-        >
-          <LogOutIcon size={20} className="text-white" />
-          <Link to="/" className="text-sm font-semibold tracking-wide">
-            Logout
-          </Link>
         </div>
       </div>
       <Footer />

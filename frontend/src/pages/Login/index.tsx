@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { login } from "../../api";
+import { toast } from "react-toastify";
 
 interface FormData {
   email: string;
@@ -31,12 +32,18 @@ const Login = () => {
       const response = await login(loginData);
 
       if (response.status === 200) {
+        const user = response.data;
+        localStorage.setItem("id", user?.id);
+        localStorage.setItem("username", user?.name);
+        localStorage.setItem("email", user?.email);
+        toast.success("Login SuccessFull!!!");
+
         navigate("/home");
       }
     } catch (error: any) {
       if (error.response) {
         if (error.response.status === 400) {
-          setError("Invalid email or password");
+          setError("Invalid Username or password");
         } else {
           setError("Authentication failed. Please try again.");
         }

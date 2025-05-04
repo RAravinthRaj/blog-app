@@ -13,14 +13,14 @@ import {
   Menu,
   X,
   Home,
-  UserIcon,
-  UserPlusIcon,
+  Plus,
   Heart,
 } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Navbar, Footer } from "../../components";
 import { toast } from "react-toastify";
 import { IoSendSharp } from "react-icons/io5";
+import React from "react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -219,6 +219,14 @@ export const BlogApp = () => {
   const [currentView, setCurrentView] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const FabButton = () => {
+    return (
+      <button className="lg:hidden fixed bottom-6 right-6 z-50 bg-gray-900 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition duration-300">
+        <Plus className="w-6 h-6" />
+      </button>
+    );
+  };
+
   const _renderFilteredPosts = () => {
     let filteredResults = [...allPosts];
 
@@ -256,19 +264,18 @@ export const BlogApp = () => {
     }
     setSidebarOpen(false);
   };
+  const _toggleLiked = (postId: string | number) => {
+    const isLiked = !likedPosts[postId];
 
-  const _toggleLiked = (postId) => {
-    setLikedPosts((prev) => {
-      const isLiked = !prev[postId];
-      setPostLikes((likes) => ({
-        ...likes,
-        [postId]: likes[postId] + (isLiked ? 1 : -1),
-      }));
-      return {
-        ...prev,
-        [postId]: isLiked,
-      };
-    });
+    setLikedPosts((prev) => ({
+      ...prev,
+      [postId]: isLiked,
+    }));
+
+    setPostLikes((likes) => ({
+      ...likes,
+      [postId]: (likes[postId] || 0) + (isLiked ? 1 : -1),
+    }));
   };
 
   const _toggleSaved = (postId: any) => {
@@ -408,7 +415,6 @@ export const BlogApp = () => {
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            {/* Background Blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -418,7 +424,6 @@ export const BlogApp = () => {
               onClick={() => setSidebarOpen(false)}
             />
 
-            {/* Sidebar Drawer */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -437,25 +442,6 @@ export const BlogApp = () => {
               </div>
               {_navigation()}
               {_renderCategory()}
-
-              <div className="md:hidden sm:flex items-center mt-4 justify-center space-x-4">
-                <div className="flex space-x-6 justify-center">
-                  {/* Login Section */}
-                  <Link
-                    to="/login"
-                    className="flex items-center space-x-2 p-3 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black transition-all duration-300"
-                  >
-                    <UserIcon className="h-5 w-5  group-hover:text-black" />
-                    <span className=" group-hover:text-white">Login</span>
-                  </Link>
-
-                  {/* Sign Up Section */}
-                  <div className="flex items-center space-x-2 p-3 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black transition-all duration-300">
-                    <UserPlusIcon className="h-5 w-5 group-hover:text-black" />
-                    <span className=" group-hover:text-white">Sign Up</span>
-                  </div>
-                </div>
-              </div>
             </motion.div>
           </>
         )}
@@ -727,6 +713,10 @@ export const BlogApp = () => {
           </div>
         </div>
       </div>
+
+      <Link to="/createPost">
+        <FabButton />
+      </Link>
 
       {/* Footer at the bottom */}
       <Footer />

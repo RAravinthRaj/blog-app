@@ -1,4 +1,3 @@
-
 package com.blog.blog_app.model;
 
 import jakarta.persistence.*;
@@ -12,7 +11,7 @@ public class PostModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
     @Column(nullable = false)
     private String title;
@@ -29,15 +28,13 @@ public class PostModel {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(nullable = false)
-    private int likes = 0;
+    @Column(columnDefinition = "JSON")
+    @Convert(converter = IntegerListConverter.class)
+    private List<Integer> likes = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private SignUpModel user;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -56,23 +53,12 @@ public class PostModel {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Helper methods for managing bidirectional relationship
-    public void addComment(Comment comment) {
-        comments.add(comment);
-        comment.setPost(this);
-    }
-
-    public void removeComment(Comment comment) {
-        comments.remove(comment);
-        comment.setPost(null);
-    }
-
     // Getters and Setters
-    public Long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -116,12 +102,31 @@ public class PostModel {
         this.content = content;
     }
 
-    public int getLikes() {
+    public List<Integer> getLikes() {
         return likes;
     }
 
-    public void setLikes(int likes) {
+    public void setLikes(List<Integer> likes) {
         this.likes = likes;
+    }
+
+    public boolean hasUserLiked(Integer userId) {
+        return likes != null && likes.contains(userId);
+    }
+
+    public void addLike(Integer userId) {
+        if (likes == null) {
+            likes = new ArrayList<>();
+        }
+        if (!likes.contains(userId)) {
+            likes.add(userId);
+        }
+    }
+
+    public void removeLike(Integer userId) {
+        if (likes != null) {
+            likes.remove(userId);
+        }
     }
 
     public SignUpModel getUser() {
@@ -130,14 +135,6 @@ public class PostModel {
 
     public void setUser(SignUpModel user) {
         this.user = user;
-    }
-
-    public List<Comment> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<Comment> comments) {
-        this.comments = comments;
     }
 
     public LocalDateTime getCreatedAt() {

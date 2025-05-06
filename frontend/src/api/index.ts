@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/auth";
+const API_URL = "http://localhost:8080/api";
 
 interface RegisterData {
   username: string;
@@ -13,10 +13,18 @@ interface SignInData {
   password: string;
 }
 
+interface PostRequest {
+  title: string;
+  excerpt: string;
+  category: string;
+  coverImage: string;
+  content: string;
+}
+
 export const register = (data: RegisterData) => {
   const { confirmPassword, ...registerData } = data as any;
 
-  return axios.post(`${API_URL}/signup`, registerData, {
+  return axios.post(`${API_URL}/auth/signup`, registerData, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -24,9 +32,59 @@ export const register = (data: RegisterData) => {
 };
 
 export const login = (data: SignInData) => {
-  return axios.post(`${API_URL}/signin`, data, {
+  return axios.post(`${API_URL}/auth/signin`, data, {
     headers: {
       "Content-Type": "application/json",
     },
   });
+};
+
+export const createPost = (postData: PostRequest, userId: number) => {
+  return axios.post(`${API_URL}/posts?userId=${userId}`, postData, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const getPostsByCategory = async (category: string) => {
+  try {
+    const response = await axios.get(`${API_URL}/posts/${category}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      validateStatus: (status) => {
+        return status === 200 || status === 204;
+      },
+    });
+    return response.status === 204 ? [] : response.data;
+  } catch (error) {
+    console.error(`Error fetching posts for category '${category}':`, error);
+    throw error;
+  }
+};
+
+export const getLikesByPostId = async (postId: number): Promise<number[]> => {
+  const response = await axios.get<number[]>(
+    `${API_URL}/posts/${postId}/likes`
+  );
+  return response.data;
+};
+
+export const getUsernamesByIds = async (userIds: number[]) => {
+  try {
+    // Join the userIds array into a comma-separated string
+    const response = await axios.get(
+      "http://localhost:8080/api/auth/getUserNames",
+      {
+        params: {
+          userIds: userIds.join(","), // Convert the array into a comma-separated string
+        },
+      }
+    );
+    return response.data.usernames; // Return the list of usernames
+  } catch (error) {
+    console.error("Error fetching usernames:", error);
+    return []; // Return an empty array if an error occurs
+  }
 };

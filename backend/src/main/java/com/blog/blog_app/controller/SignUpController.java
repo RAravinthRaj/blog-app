@@ -2,10 +2,16 @@ package com.blog.blog_app.controller;
 
 import com.blog.blog_app.dto.SignUpRequest;
 import com.blog.blog_app.model.SignUpModel;
+import com.blog.blog_app.repository.SignUpRepository;
 import com.blog.blog_app.service.SignUpService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +23,9 @@ public class SignUpController {
 
     @Autowired
     private SignUpService userService;
+
+    @Autowired
+    private SignUpService signUpService;
 
     @CrossOrigin(origins = "http://localhost:5173")
     @PostMapping("/signup")
@@ -38,4 +47,21 @@ public class SignUpController {
             return ResponseEntity.internalServerError().body("Registration failed: " + e.getMessage());
         }
     }
+
+    @GetMapping("/getUserNames")
+    public ResponseEntity<Map<String, List<String>>> getUsernamesByIds(@RequestParam List<Integer> userIds) {
+        System.out.println("Received userIds: " + userIds); // Log userIds
+
+        List<SignUpModel> users = signUpService.getUsersByIds(userIds);
+
+        // If users are found, log usernames
+        List<String> usernames = users.stream()
+                .map(SignUpModel::getUsername)
+                .collect(Collectors.toList());
+
+        System.out.println("Returning usernames: " + usernames); // Log usernames
+
+        return ResponseEntity.ok(Map.of("usernames", usernames));
+    }
+
 }

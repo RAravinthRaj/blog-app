@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { MessageSquare, Share2, Bookmark, Heart, Send } from "lucide-react";
 import { Footer, Navbar } from "../../components";
+import { IPost } from "../../types/index";
+import { useLocation } from "react-router-dom";
 
-function Post() {
+export const Post = () => {
   const [newComment, setNewComment] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -11,22 +13,27 @@ function Post() {
   const [localComments, setLocalComments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sample data (would normally come from API)
-  const post = {
-    id: 1,
-    title: "The Future of Web Development: Trends to Watch",
-    category: "Web Development",
-    coverImage: "https://via.placeholder.com/800x400",
-    createdAt: "2025-04-24T08:00:00Z",
-    content:
-      "<p>The web development industry is evolving faster than ever before. From modern frameworks to AI-driven tools, we explore what the future holds for developers worldwide.</p><h2>1. AI-Assisted Development</h2><p>Artificial intelligence is revolutionizing how we write and debug code. Developers are increasingly relying on AI pair programmers to boost productivity and solve complex problems more efficiently.</p><h2>2. WebAssembly Expansion</h2><p>WebAssembly continues to grow in popularity, enabling high-performance applications to run directly in the browser. This technology bridges the gap between web and native applications.</p><h2>3. Edge Computing</h2><p>With the rise of edge computing, web applications are becoming faster and more reliable by moving computation closer to the user.</p>",
-    likes: 150,
-    author: {
-      username: "john_doe",
-      avatar: "https://via.placeholder.com/40",
-      bio: "A passionate web developer with a love for new technologies.",
-    },
-  };
+  const location = useLocation();
+  const { post } = location.state as { post: IPost };
+
+  // if (!post) return <p className="text-red-500">Post not found.</p>;
+  // console.log(post);
+
+  // const post = {
+  //   id: 1,
+  //   title: "The Future of Web Development: Trends to Watch",
+  //   category: "Web Development",
+  //   coverImage: "https://via.placeholder.com/800x400",
+  //   createdAt: "2025-04-24T08:00:00Z",
+  //   content:
+  //     "<p>The web development industry is evolving faster than ever before. From modern frameworks to AI-driven tools, we explore what the future holds for developers worldwide.</p><h2>1. AI-Assisted Development</h2><p>Artificial intelligence is revolutionizing how we write and debug code. Developers are increasingly relying on AI pair programmers to boost productivity and solve complex problems more efficiently.</p><h2>2. WebAssembly Expansion</h2><p>WebAssembly continues to grow in popularity, enabling high-performance applications to run directly in the browser. This technology bridges the gap between web and native applications.</p><h2>3. Edge Computing</h2><p>With the rise of edge computing, web applications are becoming faster and more reliable by moving computation closer to the user.</p>",
+  //   likes: 150,
+  //   author: {
+  //     username: "john_doe",
+  //     avatar: "https://via.placeholder.com/40",
+  //     bio: "A passionate web developer with a love for new technologies.",
+  //   },
+  // };
 
   const initialComments = [
     {
@@ -124,15 +131,12 @@ function Post() {
             </h1>
             <div className="flex items-center space-x-4 mb-8 border-b border-gray-100 pb-6">
               <img
-                src={post.author.avatar || "https://via.placeholder.com/40"}
-                alt={post.author.username}
+                src={post.coverImage || "https://via.placeholder.com/40"}
+                alt={post.username}
                 className="w-12 h-12 rounded-full border-2 border-indigo-500"
               />
               <div>
-                <p className="font-medium text-gray-900">
-                  {post.author.username}
-                </p>
-                <p className="text-sm text-gray-600">{post.author.bio}</p>
+                <p className="font-medium text-gray-900">{post.username}</p>
               </div>
             </div>
             <div
@@ -182,7 +186,6 @@ function Post() {
           </div>
         </article>
 
-        {/* Comments Section */}
         <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
           <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-900">
             Comments ({localComments.length})
@@ -217,9 +220,7 @@ function Post() {
                 className="flex space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 <img
-                  src={
-                    comment.author.avatar || "https://via.placeholder.com/40"
-                  }
+                  src={comment.avatar || "https://via.placeholder.com/40"}
                   alt={comment.author.username}
                   className="w-10 h-10 rounded-full"
                 />
@@ -263,6 +264,6 @@ function Post() {
       </div>
     </div>
   );
-}
+};
 
 export default Post;

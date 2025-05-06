@@ -15,7 +15,7 @@ public class SignUpModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
     @Column(nullable = false)
     private String username;
@@ -26,7 +26,7 @@ public class SignUpModel {
     @Column(nullable = false)
     private String password;
 
-    public Long getId() {
+    public int getId() {
         return id;
     }
 

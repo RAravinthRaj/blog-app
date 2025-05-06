@@ -6,6 +6,10 @@ import com.blog.blog_app.repository.SignUpRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,4 +36,13 @@ public class SignUpService {
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
     }
+
+    @Autowired
+    private SignUpRepository signUpRepository;
+
+    @CrossOrigin(origins = "http://localhost:5173")
+    public List<SignUpModel> getUsersByIds(List<Integer> userIds) {
+        return signUpRepository.findAllById(userIds);
+    }
+
 }

@@ -11,9 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts")
+@CrossOrigin(origins = "http://localhost:5173")
 public class PostController {
 
     private static final Logger logger = LoggerFactory.getLogger(PostController.class);
@@ -21,9 +23,8 @@ public class PostController {
     @Autowired
     private PostService postService;
 
-    @CrossOrigin(origins = "http://localhost:5173")
     @PostMapping
-    public ResponseEntity<?> createPost(@RequestBody PostRequest postRequest, @RequestParam("userId") int userId) {
+    public ResponseEntity<?> createPost(@RequestBody PostRequest postRequest, @RequestParam("userId") Integer userId) {
         logger.info("Received request to create post with title: {} for user ID: {}",
                 postRequest.getTitle(), userId);
 
@@ -37,14 +38,20 @@ public class PostController {
         }
     }
 
-    @CrossOrigin(origins = "http://localhost:5173")
     @GetMapping
-    public ResponseEntity<List<PostResponse>> getAllPosts() {
+    public ResponseEntity<List<PostResponse>> getAllPosts(
+            @RequestParam(required = false) Integer userId) {
         logger.info("Received request to get all posts");
 
         try {
-            List<PostResponse> posts = postService.getAllPosts();
-            logger.info("Retrieved {} posts", posts.size());
+            List<PostResponse> posts;
+            if (userId != null) {
+                posts = postService.getAllPosts(userId);
+                logger.info("Retrieved {} posts with user ID: {}", posts.size(), userId);
+            } else {
+                posts = postService.getAllPosts();
+                logger.info("Retrieved {} posts", posts.size());
+            }
             return ResponseEntity.ok(posts);
         } catch (Exception e) {
             logger.error("Error retrieving posts: ", e);
@@ -52,60 +59,118 @@ public class PostController {
         }
     }
 
-    @CrossOrigin(origins = "http://localhost:5173")
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getPostById(@PathVariable Long id) {
-        logger.info("Received request to get post with ID: {}", id);
+    @GetMapping("/{category}")
+    public ResponseEntity<?> getPostsByCategory(
+            @PathVariable String category,
+            @RequestParam(required = false) Integer userId) {
+        logger.info("Received request to get posts for category: {}", category);
 
         try {
-            PostResponse post = postService.getPostById(id);
-            logger.info("Post found with ID: {}", id);
-            return ResponseEntity.ok(post);
+            List<PostResponse> posts;
+            if (userId != null) {
+                posts = postService.getPostsByCategory(category, userId);
+            } else {
+                posts = postService.getPostsByCategory(category);
+            }
+
+            if (posts.isEmpty()) {
+                logger.warn("No posts found for category: {}", category);
+                return ResponseEntity.noContent().build(); // Return 204 No Content if no posts found
+            }
+
+            logger.info("Found {} posts for category: {}", posts.size(), category);
+            return ResponseEntity.ok(posts); // Return the posts
+
         } catch (RuntimeException e) {
-            logger.warn("Post not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
+            logger.warn("Error retrieving posts for category: {}", category);
+            return ResponseEntity.notFound().build(); // Return 404 Not Found in case of any issue
         } catch (Exception e) {
-            logger.error("Error retrieving post with ID {}: ", id, e);
-            return ResponseEntity.internalServerError().body("Error retrieving post: " + e.getMessage());
+            logger.error("Error retrieving posts for category {}: ", category, e);
+            return ResponseEntity.internalServerError().body("Error retrieving posts: " + e.getMessage());
         }
     }
 
-    @CrossOrigin(origins = "http://localhost:5173")
-    @PostMapping("/{id}/like")
-    public ResponseEntity<?> likePost(@PathVariable Long id) {
-        logger.info("Received request to like post with ID: {}", id);
+    @PostMapping("/{postId}/toggle-like")
+    public ResponseEntity<?> toggleLike(@PathVariable Integer postId, @RequestBody Map<String, Integer> payload) {
+        Integer userId = payload.get("userId");
+        logger.info("Received request to toggle like for post ID: {} by user ID: {}", postId, userId);
 
         try {
-            PostResponse post = postService.likePost(id);
-            logger.info("Post liked successfully with ID: {}", id);
-            return ResponseEntity.ok(post);
+            if (userId == null) {
+                return ResponseEntity.badRequest().body("User ID is required");
+            }
+
+            Map<String, Object> result = postService.toggleLike(postId, userId);
+            logger.info("Like successfully toggled for post ID: {} by user ID: {}", postId, userId);
+            return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("not found")) {
-                logger.warn("Post not found with ID: {}", id);
+                logger.warn("Post not found with ID: {}", postId);
                 return ResponseEntity.notFound().build();
             } else {
-                logger.error("Error liking post with ID {}: ", id, e);
-                return ResponseEntity.internalServerError().body("Error liking post: " + e.getMessage());
+                logger.error("Error toggling like for post with ID {}: ", postId, e);
+                return ResponseEntity.internalServerError()
+                        .body("Error toggling like: " + e.getMessage());
             }
         }
     }
 
-    @CrossOrigin(origins = "http://localhost:5173")
-    @PostMapping("/{id}/unlike")
-    public ResponseEntity<?> unlikePost(@PathVariable Long id) {
-        logger.info("Received request to unlike post with ID: {}", id);
+    @GetMapping("/{postId}/likes")
+    public ResponseEntity<?> getLikes(@PathVariable Integer postId,
+            @RequestParam(required = false) Integer userId) {
+        logger.info("Received request to get likes for post ID: {} for user ID: {}", postId, userId);
 
         try {
-            PostResponse post = postService.unlikePost(id);
-            logger.info("Post unliked successfully with ID: {}", id);
-            return ResponseEntity.ok(post);
+            List<Integer> userIds = postService.getLikeUserIds(postId, userId);
+            return ResponseEntity.ok(userIds);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("not found")) {
-                logger.warn("Post not found with ID: {}", id);
+                logger.warn("Post not found with ID: {}", postId);
                 return ResponseEntity.notFound().build();
             } else {
-                logger.error("Error unliking post with ID {}: ", id, e);
-                return ResponseEntity.internalServerError().body("Error unliking post: " + e.getMessage());
+                logger.error("Error getting likes for post with ID {}: ", postId, e);
+                return ResponseEntity.internalServerError()
+                        .body("Error getting likes: " + e.getMessage());
+            }
+        }
+    }
+
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<?> likePost(@PathVariable Integer postId, @RequestParam Integer userId) {
+        logger.info("Received request to like post with ID: {} by user ID: {}", postId, userId);
+
+        try {
+            Map<String, Object> result = postService.addLike(postId, userId);
+            logger.info("Post liked successfully with ID: {} by user ID: {}", postId, userId);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                logger.warn("Post not found with ID: {}", postId);
+                return ResponseEntity.notFound().build();
+            } else {
+                logger.error("Error liking post with ID {}: ", postId, e);
+                return ResponseEntity.internalServerError()
+                        .body("Error liking post: " + e.getMessage());
+            }
+        }
+    }
+
+    @PostMapping("/{postId}/unlike")
+    public ResponseEntity<?> unlikePost(@PathVariable Integer postId, @RequestParam Integer userId) {
+        logger.info("Received request to unlike post with ID: {} by user ID: {}", postId, userId);
+
+        try {
+            Map<String, Object> result = postService.removeLike(postId, userId);
+            logger.info("Post unliked successfully with ID: {} by user ID: {}", postId, userId);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                logger.warn("Post not found with ID: {}", postId);
+                return ResponseEntity.notFound().build();
+            } else {
+                logger.error("Error unliking post with ID {}: ", postId, e);
+                return ResponseEntity.internalServerError()
+                        .body("Error unliking post: " + e.getMessage());
             }
         }
     }

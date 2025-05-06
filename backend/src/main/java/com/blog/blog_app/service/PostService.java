@@ -4,23 +4,25 @@ import com.blog.blog_app.dto.PostRequest;
 import com.blog.blog_app.dto.PostResponse;
 import com.blog.blog_app.model.PostModel;
 import com.blog.blog_app.model.SignUpModel;
-import com.blog.blog_app.repository.CommentRepository;
 import com.blog.blog_app.repository.PostRepository;
 import com.blog.blog_app.repository.SignUpRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class PostService {
 
     private static final Logger logger = LoggerFactory.getLogger(PostService.class);
+    private final ObjectMapper objectMapper;
 
     @Autowired
     private PostRepository postRepository;
@@ -29,13 +31,16 @@ public class PostService {
     private SignUpRepository userRepository;
 
     @Autowired
-    private CommentRepository commentRepository;
+    public PostService(PostRepository postRepository, ObjectMapper objectMapper) {
+        this.postRepository = postRepository;
+        this.objectMapper = objectMapper;
+    }
 
     @Transactional
-    public PostResponse createPost(PostRequest postRequest, int userId) {
+    public PostResponse createPost(PostRequest postRequest, Integer userId) {
         logger.info("Creating new post for user with ID: {}", userId);
 
-        Optional<SignUpModel> userOptional = userRepository.findById((long) userId);
+        Optional<SignUpModel> userOptional = userRepository.findById(userId);
         if (!userOptional.isPresent()) {
             logger.error("User with ID {} not found", userId);
             throw new RuntimeException("User not found");
@@ -47,23 +52,23 @@ public class PostService {
         post.setCategory(postRequest.getCategory());
         post.setCoverImage(postRequest.getCoverImage());
         post.setContent(postRequest.getContent());
-        post.setLikes(0);
+        post.setLikes(new ArrayList<>());
         post.setUser(userOptional.get());
 
         PostModel savedPost = postRepository.save(post);
         logger.info("Post saved successfully with ID: {}", savedPost.getId());
 
-        return convertToDto(savedPost);
+        return convertToDto(savedPost, null);
     }
 
     @Transactional(readOnly = true)
-    public PostResponse getPostById(Long postId) {
+    public PostResponse getPostById(Integer postId, Integer userId) {
         logger.info("Fetching post with ID: {}", postId);
 
-        PostModel post = postRepository.findById(postId)
+        PostModel post = postRepository.findById(postId.longValue())
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
 
-        return convertToDto(post);
+        return convertToDto(post, userId);
     }
 
     @Transactional(readOnly = true)
@@ -72,44 +77,218 @@ public class PostService {
 
         List<PostModel> posts = postRepository.findAll();
         return posts.stream()
-                .map(this::convertToDto)
+                .map(post -> convertToDto(post, null))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponse> getAllPosts(Integer userId) {
+        logger.info("Fetching all posts with user like status for user ID: {}", userId);
+
+        List<PostModel> posts = postRepository.findAll();
+        return posts.stream()
+                .map(post -> convertToDto(post, userId))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponse> getPostsByCategory(String category) {
+        logger.info("Fetching posts by category: {}", category);
+
+        List<PostModel> posts;
+
+        if ("all".equalsIgnoreCase(category)) {
+            posts = postRepository.findAll(); // Fetch all posts
+        } else {
+            posts = postRepository.findByCategory(category); // Fetch posts by category
+        }
+
+        return posts.stream()
+                .map(post -> convertToDto(post, null))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponse> getPostsByCategory(String category, Integer userId) {
+        logger.info("Fetching posts by category: {} with user like status for user ID: {}", category, userId);
+
+        List<PostModel> posts;
+
+        if ("all".equalsIgnoreCase(category)) {
+            posts = postRepository.findAll(); // Fetch all posts
+        } else {
+            posts = postRepository.findByCategory(category); // Fetch posts by category
+        }
+
+        return posts.stream()
+                .map(post -> convertToDto(post, userId))
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public PostResponse likePost(Long postId) {
-        logger.info("Incrementing likes for post with ID: {}", postId);
+    public Map<String, Object> toggleLike(Integer postId, Integer userId) {
+        logger.info("Toggling like for post ID: {} by user ID: {}", postId, userId);
 
-        PostModel post = postRepository.findById(postId)
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+
+        PostModel post = postRepository.findById(postId.longValue())
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
 
-        postRepository.incrementLikes(postId);
-        post.setLikes(post.getLikes() + 1);
+        boolean hasLiked = post.hasUserLiked(userId);
+        Map<String, Object> result = new HashMap<>();
 
-        logger.info("Likes incremented for post with ID: {}", postId);
+        if (hasLiked) {
+            // User already liked the post, remove the like
+            post.removeLike(userId);
+            result.put("action", "unlike");
+        } else {
+            // User hasn't liked the post, add the like
+            post.addLike(userId);
+            result.put("action", "like");
+        }
 
-        return convertToDto(post);
+        postRepository.save(post);
+
+        result.put("postId", postId);
+        result.put("userId", userId);
+        result.put("likeCount", post.getLikes().size());
+        result.put("userHasLiked", !hasLiked); // Changed from userLiked to userHasLiked for consistency
+
+        logger.info("Like toggled for post ID: {}. Action: {}", postId, result.get("action"));
+
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getLikesInfo(Integer postId, Integer userId) {
+        logger.info("Getting likes info for post ID: {} for user ID: {}", postId, userId);
+
+        PostModel post = postRepository.findById(postId.longValue())
+                .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
+
+        Map<String, Object> likesInfo = new HashMap<>();
+        likesInfo.put("postId", postId);
+        likesInfo.put("likeCount", post.getLikes().size());
+
+        // Always include userHasLiked flag for consistent API responses
+        if (userId != null) {
+            likesInfo.put("userHasLiked", post.hasUserLiked(userId)); // Changed from userLiked to userHasLiked for
+                                                                      // consistency
+        } else {
+            likesInfo.put("userHasLiked", false);
+        }
+
+        return likesInfo;
+    }
+
+    // Implementation for the addLike method
+    @Transactional
+    public Map<String, Object> addLike(Integer postId, Integer userId) {
+        logger.info("Adding like to post with ID: {} by user ID: {}", postId, userId);
+
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+
+        PostModel post = postRepository.findById(postId.longValue())
+                .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
+
+        boolean hasLiked = post.hasUserLiked(userId);
+        Map<String, Object> result = new HashMap<>();
+
+        // Only add like if user hasn't already liked the post
+        if (!hasLiked) {
+            post.addLike(userId);
+            postRepository.save(post);
+            logger.info("Like added to post with ID: {} by user ID: {}", postId, userId);
+        } else {
+            logger.info("User ID: {} has already liked post ID: {}", userId, postId);
+        }
+
+        result.put("postId", postId);
+        result.put("userId", userId);
+        result.put("likeCount", post.getLikes().size());
+        result.put("userHasLiked", true);
+        result.put("action", "like");
+
+        return result;
+    }
+
+    // Implementation for the removeLike method
+    @Transactional
+    public Map<String, Object> removeLike(Integer postId, Integer userId) {
+        logger.info("Removing like from post with ID: {} by user ID: {}", postId, userId);
+
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+
+        PostModel post = postRepository.findById(postId.longValue())
+                .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
+
+        boolean hasLiked = post.hasUserLiked(userId);
+        Map<String, Object> result = new HashMap<>();
+
+        // Only remove like if user has already liked the post
+        if (hasLiked) {
+            post.removeLike(userId);
+            postRepository.save(post);
+            logger.info("Like removed from post with ID: {} by user ID: {}", postId, userId);
+        } else {
+            logger.info("User ID: {} has not liked post ID: {}, nothing to remove", userId, postId);
+        }
+
+        result.put("postId", postId);
+        result.put("userId", userId);
+        result.put("likeCount", post.getLikes().size());
+        result.put("userHasLiked", false);
+        result.put("action", "unlike");
+
+        return result;
+    }
+
+    // Legacy methods for backward compatibility
+    @Transactional
+    public PostResponse likePost(Integer postId) {
+        logger.info("Adding legacy like to post with ID: {}", postId);
+
+        PostModel post = postRepository.findById(postId.longValue())
+                .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
+
+        postRepository.initializeLikesIfNull(postId.longValue());
+        postRepository.incrementLikes(postId.longValue());
+
+        // Refresh post from database to get updated likes
+        post = postRepository.findById(postId.longValue()).get();
+
+        logger.info("Legacy like added to post with ID: {}", postId);
+
+        return convertToDto(post, null);
     }
 
     @Transactional
-    public PostResponse unlikePost(Long postId) {
-        logger.info("Decrementing likes for post with ID: {}", postId);
+    public PostResponse unlikePost(Integer postId) {
+        logger.info("Removing legacy like from post with ID: {}", postId);
 
-        PostModel post = postRepository.findById(postId)
+        PostModel post = postRepository.findById(postId.longValue())
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
 
-        if (post.getLikes() > 0) {
-            postRepository.decrementLikes(postId);
-            post.setLikes(post.getLikes() - 1);
-            logger.info("Likes decremented for post with ID: {}", postId);
+        if (post.getLikes() != null && !post.getLikes().isEmpty()) {
+            postRepository.decrementLikes(postId.longValue());
+
+            // Refresh post from database to get updated likes
+            post = postRepository.findById(postId.longValue()).get();
+            logger.info("Legacy like removed from post with ID: {}", postId);
         } else {
-            logger.warn("Cannot decrement likes below 0 for post with ID: {}", postId);
+            logger.warn("Cannot remove like from post with ID: {} as it has no likes", postId);
         }
 
-        return convertToDto(post);
+        return convertToDto(post, null);
     }
 
-    private PostResponse convertToDto(PostModel post) {
+    private PostResponse convertToDto(PostModel post, Integer userId) {
         PostResponse dto = new PostResponse();
         dto.setId(post.getId());
         dto.setTitle(post.getTitle());
@@ -123,10 +302,44 @@ public class PostService {
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
 
-        // Get comment count
-        dto.setCommentCount((int) commentRepository.countByPostId(post.getId()));
+        // Set whether the current user has liked this post
+        if (userId != null) {
+            dto.setUserLiked(post.hasUserLiked(userId));
+        }
 
         return dto;
+    }
+
+    public List<Integer> getLikeUserIds(Integer postId, Integer userId) {
+        List<Integer> likesJson = postRepository.getLikesByPostId(postId);
+        System.out.println(likesJson);
+
+        if (likesJson == null) {
+            throw new RuntimeException("Post not found with ID: " + postId);
+        }
+
+        try {
+            // Parse the JSON array of user IDs
+            // List<Integer> userIds = objectMapper.readValue(likesJson,
+            // objectMapper.getTypeFactory().constructCollectionType(List.class,
+            // Integer.class));
+
+            // If userId is provided, check if that user has liked the post
+            // if (userId != null) {
+            // if (userIds.contains(userId)) {
+            // // User has liked the post, return just that user's ID
+            // return List.of(userId);
+            // } else {
+            // // User has not liked the post, return empty list
+            // return Collections.emptyList();
+            // }
+            // }
+
+            return likesJson;
+        } catch (Exception e) {
+            logger.error("Error parsing likes JSON for post ID: {}", postId, e);
+            throw new RuntimeException("Error processing likes data: " + e.getMessage());
+        }
     }
 
 }

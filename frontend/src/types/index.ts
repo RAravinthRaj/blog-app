@@ -7,18 +7,20 @@ export interface User {
   bio?: string;
 }
 
-export interface Post {
+export interface IPost {
   id: number;
   title: string;
-  content: string;
   excerpt: string;
-  coverImage?: string;
-  author: User;
-  createdAt: string;
-  updatedAt: string;
-  likes: number;
-  comments: number;
+  content: string;
+  coverImage: string;
   category: string;
+  tags: string[] | null;
+  likes: number;
+  commentCount: number;
+  createdAt: string; // or Date if parsed
+  updatedAt: string; // or Date if parsed
+  userId: number;
+  username: string;
 }
 
 export interface Comment {

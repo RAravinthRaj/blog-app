@@ -4,26 +4,26 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class PostResponse {
-    private Long id;
+    private int id;
     private String title;
     private String excerpt;
     private String category;
     private String coverImage;
     private String content;
-    private Integer likes;
-    private List<String> tags;
-    private Long userId;
+    private List<Integer> likes;
+    private int userId;
     private String username;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private int commentCount;
+    private boolean userLiked;
 
-    // Getters and setters
-    public Long getId() {
+    // Getters and Setters
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -67,27 +67,19 @@ public class PostResponse {
         this.content = content;
     }
 
-    public Integer getLikes() {
+    public List<Integer> getLikes() {
         return likes;
     }
 
-    public void setLikes(Integer likes) {
+    public void setLikes(List<Integer> likes) {
         this.likes = likes;
     }
 
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<String> tags) {
-        this.tags = tags;
-    }
-
-    public Long getUserId() {
+    public int getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
     }
 
@@ -121,5 +113,13 @@ public class PostResponse {
 
     public void setCommentCount(int commentCount) {
         this.commentCount = commentCount;
+    }
+
+    public boolean isUserLiked() {
+        return userLiked;
+    }
+
+    public void setUserLiked(boolean userLiked) {
+        this.userLiked = userLiked;
     }
 }

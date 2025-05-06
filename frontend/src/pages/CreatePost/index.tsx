@@ -3,24 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Image, X, Check, AlertCircle, PenLine } from "lucide-react";
 import { Footer, Navbar } from "../../components";
+import { createPost } from "../../api";
+import axios from "axios";
 
 // Component for the create post form
-const CreatePost = () => {
+export const CreatePost = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    excerpt: "",
-    category: "",
-    coverImage: "",
-    content: "",
-    tags: [] as string[],
-  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState("");
-  const [currentTag, setCurrentTag] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [formStep, setFormStep] = useState(1);
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [category, setCategory] = useState("");
+  const [coverImage, setCoverImage] = useState("");
+  const [content, setContent] = useState("");
 
   // Categories with colors
   const categories = [
@@ -40,92 +38,79 @@ const CreatePost = () => {
     },
   ];
 
-  // Update form data
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const imageUrl = e.target.value;
+    setCoverImage(imageUrl);
 
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: "",
-      });
+    // Set the preview image when the URL is updated
+    if (imageUrl) {
+      setPreviewImage(imageUrl);
     }
   };
 
-  // Handle image preview
-  const handleImagePreview = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setPreviewImage(url);
-    handleChange(e);
+  const handleClearImage = () => {
+    setCoverImage(""); // Reset cover image URL
+    setPreviewImage(""); // Reset image preview
   };
 
-  // Add a tag
-  const addTag = () => {
-    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
-      setFormData({
-        ...formData,
-        tags: [...formData.tags, currentTag.trim()],
-      });
-      setCurrentTag("");
-    }
-  };
-
-  // Remove a tag
-  const removeTag = (tagToRemove: string) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter((tag) => tag !== tagToRemove),
-    });
-  };
-
-  // Handle tag input keydown (add tag on Enter)
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
-  // Validate form
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) newErrors.title = "Title is required";
-    if (!formData.excerpt.trim()) newErrors.excerpt = "Excerpt is required";
-    if (!formData.category) newErrors.category = "Please select a category";
-    if (!formData.content.trim()) newErrors.content = "Content is required";
+    if (!title.trim()) newErrors.title = "Title is required";
+    if (!excerpt.trim()) newErrors.excerpt = "Excerpt is required";
+    if (!category) newErrors.category = "Please select a category";
+    if (!content.trim()) newErrors.content = "Content is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Submit form
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
+
+    console.log("Form submitted");
 
     if (validateForm()) {
       setIsSubmitting(true);
 
-      // Simulating API call
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setShowSuccessMessage(true);
+      const postData = {
+        title,
+        excerpt,
+        category,
+        coverImage,
+        content,
+      };
 
-        // Redirect after showing success message
+      console.log("Post Data:", postData);
+
+      try {
+        const storedId = localStorage.getItem("id");
+
+        if (!storedId) {
+          throw new Error("User ID not found in localStorage");
+        }
+
+        const userId = parseInt(storedId, 10);
+        console.log("User ID:", userId);
+
+        const response = await createPost(postData, userId);
+
+        setShowSuccessMessage(true);
+        console.log("Post Created Response:", response.data);
+
         setTimeout(() => {
-          // navigate('/dashboard');
-          console.log("Form submitted:", formData);
+          // Reset form or redirect, if needed
         }, 2000);
-      }, 1500);
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("Axios error response:", error.response?.data);
+          console.error("Axios error status:", error.response?.status);
+        } else {
+          console.error("General error:", error);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -136,15 +121,15 @@ const CreatePost = () => {
     const newErrors: Record<string, string> = {};
 
     if (formStep === 1) {
-      if (!formData.title.trim()) {
+      if (!title.trim()) {
         newErrors.title = "Title is required";
         currentStepValid = false;
       }
-      if (!formData.excerpt.trim()) {
+      if (!excerpt.trim()) {
         newErrors.excerpt = "Excerpt is required";
         currentStepValid = false;
       }
-      if (!formData.category) {
+      if (!category) {
         newErrors.category = "Please select a category";
         currentStepValid = false;
       }
@@ -232,12 +217,20 @@ const CreatePost = () => {
               <p className="text-green-600 mb-4">
                 Your post has been published and is now live.
               </p>
-              <button
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                onClick={() => navigate("/dashboard")}
-              >
-                View Your Posts
-              </button>
+              <div className="flex flex-col space-y-5 lg:mx-32">
+                <button
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer transition-colors"
+                  onClick={() => navigate("/profile")}
+                >
+                  View Your Posts
+                </button>
+                <button
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer transition-colors"
+                  onClick={() => navigate("/home")}
+                >
+                  Go to Home
+                </button>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -280,8 +273,8 @@ const CreatePost = () => {
                           type="text"
                           id="title"
                           name="title"
-                          value={formData.title}
-                          onChange={handleChange}
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
                           className={`w-full px-4 py-3 rounded-lg border ${
                             errors.title ? "border-red-500" : "border-gray-300"
                           } focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all`}
@@ -307,8 +300,8 @@ const CreatePost = () => {
                           type="text"
                           id="excerpt"
                           name="excerpt"
-                          value={formData.excerpt}
-                          onChange={handleChange}
+                          value={excerpt}
+                          onChange={(e) => setExcerpt(e.target.value)}
                           className={`w-full px-4 py-3 rounded-lg border ${
                             errors.excerpt
                               ? "border-red-500"
@@ -333,26 +326,26 @@ const CreatePost = () => {
                           Category <span className="text-red-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          {categories.map((category) => (
-                            <div key={category.value}>
+                          {categories.map((categoryOption) => (
+                            <div key={categoryOption.value}>
                               <input
                                 type="radio"
-                                id={category.value}
+                                id={categoryOption.value}
                                 name="category"
-                                value={category.value}
-                                checked={formData.category === category.value}
-                                onChange={handleChange}
+                                value={categoryOption.value}
+                                checked={category === categoryOption.value}
+                                onChange={(e) => setCategory(e.target.value)}
                                 className="hidden peer"
                               />
                               <label
-                                htmlFor={category.value}
+                                htmlFor={categoryOption.value}
                                 className={`block border rounded-lg p-3 text-center cursor-pointer transition-all ${
-                                  formData.category === category.value
-                                    ? category.color + " border-2"
+                                  category === categoryOption.value
+                                    ? `${categoryOption.color} border-2`
                                     : "border-gray-200 hover:border-gray-300"
                                 } peer-checked:border-2`}
                               >
-                                {category.value}
+                                {categoryOption.value}
                               </label>
                             </div>
                           ))}
@@ -379,8 +372,8 @@ const CreatePost = () => {
                               type="url"
                               id="coverImage"
                               name="coverImage"
-                              value={formData.coverImage}
-                              onChange={handleImagePreview}
+                              value={coverImage}
+                              onChange={handleCoverImageChange}
                               className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                               placeholder="https://example.com/image.jpg"
                             />
@@ -406,10 +399,7 @@ const CreatePost = () => {
                               />
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setPreviewImage("");
-                                  setFormData({ ...formData, coverImage: "" });
-                                }}
+                                onClick={handleClearImage}
                                 className="absolute top-2 right-2 bg-white/80 p-1 rounded-full hover:bg-white transition-all"
                               >
                                 <X className="h-5 w-5 text-gray-700" />
@@ -417,48 +407,6 @@ const CreatePost = () => {
                             </motion.div>
                           )}
                         </AnimatePresence>
-                      </div>
-
-                      {/* Tags Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tags
-                        </label>
-                        <div className="flex">
-                          <input
-                            type="text"
-                            value={currentTag}
-                            onChange={(e) => setCurrentTag(e.target.value)}
-                            onKeyDown={handleTagKeyDown}
-                            className="flex-grow px-4 py-3 rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-                            placeholder="Add tags (press Enter after each tag)"
-                          />
-                          <button
-                            type="button"
-                            onClick={addTag}
-                            className="px-4 py-3 bg-gray-100 hover:bg-gray-200 border border-l-0 border-gray-300 rounded-r-lg transition-colors"
-                          >
-                            Add
-                          </button>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {formData.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800"
-                            >
-                              #{tag}
-                              <button
-                                type="button"
-                                onClick={() => removeTag(tag)}
-                                className="ml-1 text-gray-500 hover:text-gray-700"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -481,8 +429,8 @@ const CreatePost = () => {
                         <textarea
                           id="content"
                           name="content"
-                          value={formData.content}
-                          onChange={handleChange}
+                          value={content}
+                          onChange={(e) => setContent(e.target.value)}
                           rows={12}
                           className={`w-full px-4 py-3 rounded-lg border ${
                             errors.content
@@ -511,35 +459,16 @@ const CreatePost = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm text-gray-500">Title</p>
-                            <p className="font-medium">
-                              {formData.title || "—"}
-                            </p>
+                            <p className="font-medium">{title || "—"}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-500">Category</p>
-                            <p className="font-medium">
-                              {formData.category || "—"}
-                            </p>
+                            <p className="font-medium">{category || "—"}</p>
                           </div>
                           <div className="md:col-span-2">
                             <p className="text-sm text-gray-500">Excerpt</p>
-                            <p>{formData.excerpt || "—"}</p>
+                            <p>{excerpt || "—"}</p>
                           </div>
-                          {formData.tags.length > 0 && (
-                            <div className="md:col-span-2">
-                              <p className="text-sm text-gray-500">Tags</p>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {formData.tags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="px-2 py-0.5 rounded-full bg-gray-200 text-xs"
-                                  >
-                                    #{tag}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -580,35 +509,9 @@ const CreatePost = () => {
                         whileHover={isSubmitting ? {} : { scale: 1.02 }}
                         whileTap={isSubmitting ? {} : { scale: 0.98 }}
                       >
-                        {isSubmitting ? (
-                          <>
-                            <svg
-                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Publishing...
-                          </>
-                        ) : (
-                          <div className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors">
-                            Publish Post
-                          </div>
-                        )}
+                        <div className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                          Publish Post
+                        </div>
                       </motion.button>
                     )}
                   </div>

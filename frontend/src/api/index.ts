@@ -88,3 +88,32 @@ export const getUsernamesByIds = async (userIds: number[]) => {
     return []; // Return an empty array if an error occurs
   }
 };
+
+export const getCommentsByPostId = async (
+  postId: number
+): Promise<{ userName: string; text: string }[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/posts/${postId}/comments`);
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching comments:", err);
+    throw new Error("Failed to fetch comments");
+  }
+};
+
+// Function to add a comment to a specific post
+export const addComment = async (
+  postId: number,
+  userId: number,
+  text: string
+): Promise<void> => {
+  try {
+    await axios.post(`${API_URL}/posts/${postId}/comments`, {
+      userId,
+      text,
+    });
+  } catch (err) {
+    console.error("Error adding comment:", err);
+    throw new Error("Failed to add comment");
+  }
+};

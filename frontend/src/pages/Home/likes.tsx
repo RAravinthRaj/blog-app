@@ -85,6 +85,8 @@ const LikeButtonComponent = ({
             }`}
           >
             {likerIds.length}
+            {"  "}
+            {likerIds.length > 1 ? "Likes" : "Like"}
           </span>
         </button>
 

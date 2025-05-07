@@ -16,16 +16,24 @@ import {
   Plus,
   Heart,
   MessageCircle,
+  Send,
+  Clock,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Navbar, Footer } from "../../components";
-import { getLikesByPostId, getPostsByCategory } from "../../api";
+import {
+  getLikesByPostId,
+  getPostsByCategory,
+  getCommentsByPostId,
+  addComment,
+} from "../../api";
 import { IPost } from "../../types/index";
 import LikeButton from "./likes";
 import user from "../../assets/profile.png";
 import { format } from "date-fns";
 import { HeartAnimation } from "./heartAnimation";
 import { toggleLike } from "../../api/likesApi";
+import { Sheet } from "react-modal-sheet";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -338,6 +346,11 @@ export const BlogApp = () => {
     const [likerIds, setLikerIds] = useState<number[]>([]);
     const [showHeart, setShowHeart] = useState(false);
     const [firstShowHeart, setFirstShowHeart] = useState(false);
+    const [comments, setComments] = useState<any[]>([]);
+    const [newComment, setNewComment] = useState("");
+    const [isOpen, setOpen] = useState(false);
+    const [error, setError] = useState("");
+    const [showTextarea, setShowTextarea] = useState(false);
 
     const userId = parseInt(localStorage.getItem("id") || "0", 10);
     const userName = localStorage.getItem("username") || "";
@@ -352,14 +365,12 @@ export const BlogApp = () => {
 
     const handleToggleLike = async () => {
       const hasLiked = likerIds.includes(userId);
-
       try {
         if (hasLiked) {
           setLikerIds((prev) => prev.filter((id) => id !== userId));
         } else {
           setLikerIds((prev) => [...prev, userId]);
         }
-
         await toggleLike(post.id, userId);
       } catch (error) {
         console.error("Error toggling like:", error);
@@ -368,11 +379,8 @@ export const BlogApp = () => {
 
     const handleDoubleClick = async () => {
       if (!userId) return;
-
       if (!firstShowHeart) {
         const hasLiked = likerIds.includes(userId);
-
-        // Only like if not already liked
         if (!hasLiked) {
           setLikerIds((prev) => [...prev, userId]);
           try {
@@ -382,116 +390,342 @@ export const BlogApp = () => {
             setLikerIds((prev) => prev.filter((id) => id !== userId)); // rollback
           }
         }
-
         setFirstShowHeart(true); // only once
       }
-
       setShowHeart(true);
-
       setTimeout(() => {
         setShowHeart(false);
       }, 1000);
     };
 
+    useEffect(() => {
+      if (isOpen) {
+        const fetchComments = async () => {
+          try {
+            const fetched = await getCommentsByPostId(post.id);
+            setComments(Array.isArray(fetched) ? fetched : []);
+          } catch (err) {
+            console.error("Failed to fetch comments", err);
+            setError("Could not load comments.");
+          }
+        };
+        fetchComments();
+      }
+    }, [isOpen, post.id]);
+
+    const handleCommentSubmit = async () => {
+      if (newComment.trim()) {
+        try {
+          await addComment(post.id, userId, newComment);
+          setComments([...comments, { userName, text: newComment }]);
+          setNewComment("");
+          setShowTextarea(false);
+        } catch (err) {
+          console.error("Failed to add comment", err);
+        }
+      }
+    };
+
+    const openSheet = () => setOpen(true);
+    const closeSheet = () => {
+      setOpen(false);
+      setShowTextarea(false);
+      setNewComment("");
+    };
+
+    // return (
+    //   <>
+    //     <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    //       {/* Content Section */}
+    //       <div className="p-4" onDoubleClick={handleDoubleClick}>
+    //         <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
+    //           <img
+    //             src={post.coverImage}
+    //             alt={post.title}
+    //             className="w-full h-full mb-2 object-cover transition-transform duration-500 hover:scale-105"
+    //             loading="lazy"
+    //           />
+    //           {showHeart && <HeartAnimation showHeart={showHeart} />}
+    //         </div>
+
+    //         {/* Author info */}
+    //         <div className="flex items-center gap-3 mb-5">
+    //           <img
+    //             src={user}
+    //             alt={post.username}
+    //             className="w-12 h-12 rounded-full object-cover border-2 border-primary-500 shadow-sm"
+    //             loading="lazy"
+    //           />
+    //           <div>
+    //             <span className="text-lg font-semibold text-gray-800">
+    //               {post.username}
+    //             </span>
+    //             <p className="text-xs text-gray-500">
+    //               on {format(new Date(post.createdAt), "MMM d, yyyy")}
+    //             </p>
+    //           </div>
+    //         </div>
+
+    //         {/* Post title */}
+    //         <h2
+    //           onClick={() => {
+    //             navigateToPostPage(post);
+    //           }}
+    //           className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3"
+    //         >
+    //           {post.title}
+    //         </h2>
+
+    //         {/* Post excerpt */}
+    //         <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
+    //           {post.excerpt}
+    //         </p>
+
+    //         {/* Categories and reading time */}
+    //         <div className="flex items-center justify-between mb-5">
+    //           <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-1 rounded-full text-xs font-medium">
+    //             {post.category}
+    //           </span>
+    //           <div className="flex items-center gap-2 text-sm text-gray-500">
+    //             <span className="flex items-center gap-1">
+    //               <svg
+    //                 xmlns="http://www.w3.org/2000/svg"
+    //                 width="16"
+    //                 height="16"
+    //                 viewBox="0 0 24 24"
+    //                 fill="none"
+    //                 stroke="currentColor"
+    //                 strokeWidth="2"
+    //                 strokeLinecap="round"
+    //                 strokeLinejoin="round"
+    //               >
+    //                 <circle cx="12" cy="12" r="10"></circle>
+    //                 <polyline points="12 6 12 12 16 14"></polyline>
+    //               </svg>
+    //               5 min read
+    //             </span>
+    //           </div>
+    //         </div>
+
+    //         {/* Interaction buttons */}
+    //         <div className="flex items-center justify-between border-t pt-4 border-gray-100">
+    //           <LikeButton
+    //             postId={post.id}
+    //             userId={userId}
+    //             userName={userName}
+    //             likerIds={likerIds}
+    //             onToggleLike={handleToggleLike}
+    //           />
+    //           <button
+    //             onClick={openSheet}
+    //             className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600"
+    //           >
+    //             <MessageCircle className="h-5 w-5" />
+    //             <span>{comments.length} Comments</span>
+    //           </button>
+
+    //           <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+    //             <Share2 size={18} />
+    //           </button>
+
+    //           <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+    //             <Bookmark size={18} />
+    //           </button>
+    //         </div>
+    //       </div>
+    //     </div>
+
+    //     {/* Comment Sheet */}
+    //     <Sheet isOpen={isOpen} onClose={closeSheet}>
+    //       <Sheet.Container>
+    //         <Sheet.Header />
+    //         <Sheet.Content>
+    //           <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
+    //             {comments.length ? (
+    //               comments.map((comment, index) => (
+    //                 <div
+    //                   key={index}
+    //                   className="bg-gray-100 p-3 rounded-md text-sm"
+    //                 >
+    //                   <p className="font-semibold text-gray-800">
+    //                     {comment.userName}
+    //                   </p>
+    //                   <p className="text-gray-700">{comment.text}</p>
+    //                 </div>
+    //               ))
+    //             ) : (
+    //               <p className="text-gray-600">
+    //                 No comments yet. Be the first to comment!
+    //               </p>
+    //             )}
+    //           </div>
+
+    //           {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
+
+    //           {/* Comment Input or Add Button */}
+    //           <div className="flex justify-between items-center p-3 bg-gray-50 border-t">
+    //             {showTextarea ? (
+    //               <div className="flex items-center w-full space-x-3">
+    //                 <textarea
+    //                   value={newComment}
+    //                   onChange={(e) => setNewComment(e.target.value)}
+    //                   className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm"
+    //                   placeholder="Write your comment..."
+    //                   aria-label="Write your comment"
+    //                   autoFocus
+    //                 />
+    //                 <button
+    //                   onClick={handleCommentSubmit}
+    //                   className="bg-blue-600 text-white p-3 rounded-full"
+    //                 >
+    //                   <Send className="h-5 w-5" />
+    //                 </button>
+    //               </div>
+    //             ) : (
+    //               <button
+    //                 onClick={() => setShowTextarea(true)}
+    //                 className="bg-blue-500 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-600"
+    //               >
+    //                 Add Comment
+    //               </button>
+    //             )}
+    //           </div>
+    //         </Sheet.Content>
+    //       </Sheet.Container>
+    //       <Sheet.Backdrop />
+    //     </Sheet>
+    //   </>
+    // );
     return (
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-        {/* Content Section */}
-        <div className="p-4" onDoubleClick={handleDoubleClick}>
-          <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="w-full h-full mb-2 object-cover transition-transform duration-500 hover:scale-105"
-              loading="lazy"
-            />
-            {showHeart && <HeartAnimation showHeart={showHeart} />}
-          </div>
-
-          {/* Author info */}
-          <div className="flex items-center gap-3 mb-5">
-            <img
-              src={user}
-              alt={post.username}
-              className="w-12 h-12 rounded-full object-cover border-2 border-primary-500 shadow-sm"
-              loading="lazy"
-            />
-            <div>
-              <span className="text-lg font-semibold text-gray-800">
-                {post.username}
-              </span>
-              <p className="text-xs text-gray-500">
-                on {format(new Date(post.createdAt), "MMM d, yyyy")}
-              </p>
+      <>
+        <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 ">
+          {/* Content Section */}
+          <div className="p-4" onDoubleClick={handleDoubleClick}>
+            {/* Post Content */}
+            <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
+              <img
+                src={post.coverImage}
+                alt={post.title}
+                className="w-full h-full mb-2 object-cover transition-transform duration-500 hover:scale-105"
+                loading="lazy"
+              />
+              {showHeart && <HeartAnimation showHeart={showHeart} />}
             </div>
-          </div>
 
-          {/* Post title */}
-          <h2
-            onClick={() => {
-              navigateToPostPage(post);
-            }}
-            className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3"
-          >
-            {post.title}
-          </h2>
+            {/* Author Info */}
+            <div className="flex items-center gap-3 mb-5">
+              <img
+                src={user}
+                alt={post.username}
+                className="w-12 h-12 rounded-full object-cover border-2 border-primary-500 shadow-sm"
+                loading="lazy"
+              />
+              <div>
+                <span className="text-lg font-semibold text-gray-800">
+                  {post.username}
+                </span>
+                <p className="text-xs text-gray-500">
+                  on {format(new Date(post.createdAt), "MMM d, yyyy")}
+                </p>
+              </div>
+            </div>
 
-          {/* Post excerpt */}
-          <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
-            {post.excerpt}
-          </p>
+            {/* Title & Excerpt */}
+            <h2
+              onClick={() => navigateToPostPage(post)}
+              className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3"
+            >
+              {post.title}
+            </h2>
+            <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
+              {post.excerpt}
+            </p>
 
-          {/* Categories and reading time */}
-          <div className="flex items-center justify-between mb-5">
-            <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-1 rounded-full text-xs font-medium">
-              {post.category}
-            </span>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            {/* Tags and Meta */}
+            <div className="flex items-center justify-between mb-5">
+              <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-1 rounded-full text-xs font-medium">
+                {post.category}
+              </span>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Clock size={16} />5 min read
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between border-t pt-4 border-gray-100">
+              <LikeButton
+                postId={post.id}
+                userId={userId}
+                userName={userName}
+                likerIds={likerIds}
+                onToggleLike={handleToggleLike}
+              />
+              <div className="mt-5.5 flex-5 flex flex-row items-center justify-around">
+                <button
+                  onClick={() => setOpen(!isOpen)}
+                  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600"
                 >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                5 min read
-              </span>
+                  <MessageCircle className="h-5 w-5" />
+                  <span>Comment</span>
+                </button>
+                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
+                  <Share2 size={18} />
+                </button>
+                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
+                  <Bookmark size={18} />
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Interaction buttons */}
-          <div className="flex items-center justify-between border-t pt-4 border-gray-100">
-            <LikeButton
-              postId={post.id}
-              userId={userId}
-              userName={userName}
-              likerIds={likerIds}
-              onToggleLike={handleToggleLike}
-            />
-            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
-              <MessageCircle size={18} />
-              <span className="text-sm text-gray-600">
-                {post.comments || 0}
-              </span>
-            </button>
-
-            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
-              <Share2 size={18} />
-            </button>
-
-            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
-              <Bookmark size={18} />
-            </button>
           </div>
         </div>
-      </div>
+
+        {/* Comments Panel */}
+        {isOpen && (
+          <div className="bg-white -mt-7 border border-gray-200 rounded-b-2xl p-4 shadow-inner">
+            {/* Comment Input */}
+            <div className="flex items-start gap-2 mb-4">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 border border-gray-300 p-2 rounded-md text-sm resize-none"
+                placeholder="Write a comment..."
+                rows={2}
+              />
+              <button
+                onClick={handleCommentSubmit}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+
+            {/* Comment List */}
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {comments.length ? (
+                comments.map((comment, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-3 rounded-md shadow-sm"
+                  >
+                    <p className="font-semibold text-gray-800">
+                      {comment.userName}
+                    </p>
+                    <p className="text-gray-700 text-sm">{comment.text}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500">
+                  No comments yet. Be the first to comment!
+                </p>
+              )}
+            </div>
+
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          </div>
+        )}
+      </>
     );
   };
 
@@ -623,8 +857,8 @@ export const BlogApp = () => {
 
           <div className="flex-1 from-blue-800 via-indigo-700 to-purple-800">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <MainContent />
               <TrendingSidebar />
+              <MainContent />
             </div>
           </div>
         </div>

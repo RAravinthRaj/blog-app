@@ -8,11 +8,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostRepository extends JpaRepository<PostModel, Long> {
 
     List<PostModel> findByCategory(String category);
+
+    boolean existsById(Integer id);
 
     // This query will be used only for legacy support
     @Modifying
@@ -47,5 +50,7 @@ public interface PostRepository extends JpaRepository<PostModel, Long> {
     @Modifying
     @Query(value = "SELECT COUNT(*) > 0 FROM posts WHERE id = :postId AND JSON_CONTAINS(likes, CAST(:userId AS JSON), '$') = 1", nativeQuery = true)
     Boolean hasUserLikedPost(@Param("postId") Integer postId, @Param("userId") Integer userId);
+
+    Optional<PostModel> findById(Integer id);
 
 }

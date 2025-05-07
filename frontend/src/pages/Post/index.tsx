@@ -64,7 +64,7 @@ export const Post = () => {
     setLocalComments(initialComments);
   }, []);
 
-  const handleSubmitComment = (e) => {
+  const handleSubmitComment = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 

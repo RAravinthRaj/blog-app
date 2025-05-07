@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare,
@@ -15,15 +15,17 @@ import {
   Home,
   Plus,
   Heart,
+  MessageCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Navbar, Footer } from "../../components";
-import { toast } from "react-toastify";
-import { IoSendSharp } from "react-icons/io5";
 import { getLikesByPostId, getPostsByCategory } from "../../api";
 import { IPost } from "../../types/index";
 import LikeButton from "./likes";
 import user from "../../assets/profile.png";
+import { format } from "date-fns";
+import { HeartAnimation } from "./heartAnimation";
+import { toggleLike } from "../../api/likesApi";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,11 +35,6 @@ const containerVariants = {
       staggerChildren: 0.15,
     },
   },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
 };
 
 const mainNavItems = [
@@ -61,7 +58,6 @@ const mainNavItems = [
 export const BlogApp = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
-
   const [savedPosts, setSavedPosts] = useState([]);
   const [category, setCategory] = useState("All");
   const [posts, setPosts] = useState([]);
@@ -117,7 +113,6 @@ export const BlogApp = () => {
     fetchCategoryCounts();
   }, []);
 
-  // Memoize categories with proper counting
   const categories = useMemo(
     () => [
       {
@@ -154,14 +149,15 @@ export const BlogApp = () => {
     [posts]
   );
 
-  // Memoize filtered posts
   const filteredPosts = useMemo(() => {
     let filteredResults = [...posts];
 
     if (currentView === "saved") {
       return filteredResults.filter((post) => savedPosts.includes(post.id));
     } else if (currentView === "popular") {
-      return [...filteredResults].sort((a, b) => b.likes - a.likes).slice(0, 3);
+      return [...filteredResults]
+        .sort((a, b) => b.likes.length - a.likes.length)
+        .slice(0, 3);
     } else if (activeCategory !== "All") {
       return filteredResults.filter((post) => post.category === activeCategory);
     }
@@ -169,7 +165,6 @@ export const BlogApp = () => {
     return filteredResults;
   }, [posts, currentView, activeCategory, savedPosts]);
 
-  // Memoize event handlers
   const handleCategoryClick = useCallback((selectedCategory: string) => {
     setActiveCategory(selectedCategory);
     setCategory(selectedCategory);
@@ -189,7 +184,6 @@ export const BlogApp = () => {
     navigate("/post", { state: { post } });
   };
 
-  // Memoize UI Components
   const Navigation = useMemo(() => {
     return (
       <div className="bg-white rounded-xl shadow p-4">
@@ -340,56 +334,166 @@ export const BlogApp = () => {
     [Navigation, CategorySection]
   );
 
-  const PostCard = useCallback(
-    ({ post }) => {
-      return (
-        <motion.article
-          variants={itemVariants}
-          className="bg-white rounded-xl shadow-md transition-all overflow-hidden border border-gray-100 hover:shadow-lg hover:scale-101"
-        >
-          <div className="p-4">
-            <div className="flex items-center gap-4 mb-4 shadow p-2 rounded-md">
-              <img src={user} className="w-8 h-8 rounded-full object-cover" />
-              <span className="text-lg font-bold">{post.username}</span>
-            </div>
-            <h2
-              onClick={() => {
-                navigateToPostPage;
-              }}
-              className="text-2xl font-bold mb-2 text-gray-900 hover:text-primary-600 transition-colors"
-            >
-              {post.title}
-            </h2>
-            <p className="text-gray-600 mb-4 leading-relaxed">{post.excerpt}</p>
-            <div className="flex items-center space-x-2 mb-3">
-              <span className="bg-black text-white text-xs font-semibold px-2.5 py-0.5 rounded-md">
-                {post.category}
-              </span>
-              <span className="text-sm text-gray-500">5 min read</span>
-            </div>
+  const PostCard = ({ post }: any) => {
+    const [likerIds, setLikerIds] = useState<number[]>([]);
+    const [showHeart, setShowHeart] = useState(false);
+    const [firstShowHeart, setFirstShowHeart] = useState(false);
 
-            <div
-              className="mb-5 cursor-pointer"
-              onClick={() => {
-                navigateToPostPage(post);
-              }}
-            >
-              {post.coverImage && (
-                <img
-                  src={post.coverImage}
-                  alt={post.title}
-                  className="w-screen h-64 object-center object-cover rounded-2xl transition-transform duration-300"
-                />
-              )}
-            </div>
+    const userId = parseInt(localStorage.getItem("id") || "0", 10);
+    const userName = localStorage.getItem("username") || "";
 
-            <LikeButton postId={post.id} />
+    useEffect(() => {
+      const fetchLikes = async () => {
+        const likers = await getLikesByPostId(post.id);
+        setLikerIds(likers);
+      };
+      fetchLikes();
+    }, [post.id]);
+
+    const handleToggleLike = async () => {
+      const hasLiked = likerIds.includes(userId);
+
+      try {
+        if (hasLiked) {
+          setLikerIds((prev) => prev.filter((id) => id !== userId));
+        } else {
+          setLikerIds((prev) => [...prev, userId]);
+        }
+
+        await toggleLike(post.id, userId);
+      } catch (error) {
+        console.error("Error toggling like:", error);
+      }
+    };
+
+    const handleDoubleClick = async () => {
+      if (!userId) return;
+
+      if (!firstShowHeart) {
+        const hasLiked = likerIds.includes(userId);
+
+        // Only like if not already liked
+        if (!hasLiked) {
+          setLikerIds((prev) => [...prev, userId]);
+          try {
+            await toggleLike(post.id, userId);
+          } catch (error) {
+            console.error("Error toggling like:", error);
+            setLikerIds((prev) => prev.filter((id) => id !== userId)); // rollback
+          }
+        }
+
+        setFirstShowHeart(true); // only once
+      }
+
+      setShowHeart(true);
+
+      setTimeout(() => {
+        setShowHeart(false);
+      }, 1000);
+    };
+
+    return (
+      <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        {/* Content Section */}
+        <div className="p-4" onDoubleClick={handleDoubleClick}>
+          <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="w-full h-full mb-2 object-cover transition-transform duration-500 hover:scale-105"
+              loading="lazy"
+            />
+            {showHeart && <HeartAnimation showHeart={showHeart} />}
           </div>
-        </motion.article>
-      );
-    },
-    [savedPosts]
-  );
+
+          {/* Author info */}
+          <div className="flex items-center gap-3 mb-5">
+            <img
+              src={user}
+              alt={post.username}
+              className="w-12 h-12 rounded-full object-cover border-2 border-primary-500 shadow-sm"
+              loading="lazy"
+            />
+            <div>
+              <span className="text-lg font-semibold text-gray-800">
+                {post.username}
+              </span>
+              <p className="text-xs text-gray-500">
+                on {format(new Date(post.createdAt), "MMM d, yyyy")}
+              </p>
+            </div>
+          </div>
+
+          {/* Post title */}
+          <h2
+            onClick={() => {
+              navigateToPostPage(post);
+            }}
+            className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3"
+          >
+            {post.title}
+          </h2>
+
+          {/* Post excerpt */}
+          <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
+            {post.excerpt}
+          </p>
+
+          {/* Categories and reading time */}
+          <div className="flex items-center justify-between mb-5">
+            <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-1 rounded-full text-xs font-medium">
+              {post.category}
+            </span>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                5 min read
+              </span>
+            </div>
+          </div>
+
+          {/* Interaction buttons */}
+          <div className="flex items-center justify-between border-t pt-4 border-gray-100">
+            <LikeButton
+              postId={post.id}
+              userId={userId}
+              userName={userName}
+              likerIds={likerIds}
+              onToggleLike={handleToggleLike}
+            />
+            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+              <MessageCircle size={18} />
+              <span className="text-sm text-gray-600">
+                {post.comments || 0}
+              </span>
+            </button>
+
+            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+              <Share2 size={18} />
+            </button>
+
+            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+              <Bookmark size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const TrendingSidebar = useCallback(
     () => (
@@ -408,12 +512,11 @@ export const BlogApp = () => {
           </div>
           <div className="space-y-4">
             {posts
+              .sort((a, b) => b.likes.length - a.likes.length)
               .slice(0, 3)
-              .sort((a, b) => b.likes - a.likes)
               .map((post) => (
                 <a
                   key={post.id}
-                  href={`#post-${post.id}`}
                   className="flex space-x-4 group"
                   onClick={() => {
                     setActiveCategory(post.category);
@@ -424,7 +527,7 @@ export const BlogApp = () => {
                     <img
                       src={post.coverImage}
                       alt={post.title}
-                      className="w-24 h-24 rounded-lg object-cover group-hover:ring-2 ring-primary-500 transition-all"
+                      className="w-35 h-25 rounded-lg object-fit group-hover:ring-2 ring-primary-500 transition-all"
                     />
                   )}
                   <div>
@@ -462,7 +565,7 @@ export const BlogApp = () => {
         animate="show"
         className="lg:col-span-7 order-2 lg:order-1 space-y-6"
       >
-        <header className="mb-6">
+        <header className="mt-4 mb-6">
           <h1 className="text-2xl md:text-3xl text-center font-bold text-gray-900">
             {currentView === "saved"
               ? "Saved Posts"
@@ -510,10 +613,10 @@ export const BlogApp = () => {
   }, []);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="container mx-auto bg-gray-50 pt-20 px-4">
+      <div className="container mx-auto  pt-20 px-4">
         <div className="flex flex-col lg:flex-row gap-8">
           <MobileSidebar />
           <DesktopSidebar />

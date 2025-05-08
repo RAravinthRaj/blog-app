@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bookmark,
   TrendingUp,
   List,
   Cpu,
@@ -26,7 +25,7 @@ import {
   addComment,
 } from "../../api";
 import { IPost } from "../../types/index";
-import LikeButton from "./likes";
+import LikeButton from "../../components/likes";
 import user from "../../assets/profile.png";
 import { format } from "date-fns";
 import { HeartAnimation } from "./heartAnimation";
@@ -52,11 +51,6 @@ const mainNavItems = [
     name: "Popular",
     icon: <TrendingUp className="h-5 w-5 text-gray-600" />,
     path: "/popular",
-  },
-  {
-    name: "Saved",
-    icon: <Bookmark className="h-5 w-5 text-gray-600" />,
-    path: "/saved",
   },
 ];
 
@@ -374,10 +368,6 @@ export const BlogApp = () => {
       }
     };
 
-    const _toggleSaved = () => {
-      setIsSaved(!isSaved);
-    };
-
     const handleDoubleClick = async () => {
       if (!userId) return;
       if (!firstShowHeart) {
@@ -404,19 +394,7 @@ export const BlogApp = () => {
         const fetchComments = async () => {
           try {
             const fetched = await getCommentsByPostId(post.id);
-            console.log("Fetched comments:", fetched);
-
-            // Add a debug step to see the exact structure
-            if (fetched) {
-              console.log(
-                "First comment example:",
-                fetched[0] || "No comments"
-              );
-            }
-
-            // Process based on structure
             if (Array.isArray(fetched)) {
-              // Make sure each comment has the fields you expect
               const processedComments = fetched.map((comment) => ({
                 id: comment.id,
                 userId: comment.userId,
@@ -424,7 +402,6 @@ export const BlogApp = () => {
                 text: comment.text || comment.content || comment.message || "",
                 timestamp: comment.timestamp || comment.createdAt || new Date(),
               }));
-
               setComments(processedComments);
             } else {
               console.error("Unexpected data format:", fetched);
@@ -435,7 +412,6 @@ export const BlogApp = () => {
             setError("Could not load comments.");
           }
         };
-
         fetchComments();
       }
     }, [isOpen, post?.id]);
@@ -443,12 +419,7 @@ export const BlogApp = () => {
     const handleCommentSubmit = async () => {
       if (newComment.trim()) {
         try {
-          console.log("Submitting comment:", {
-            postId: post.id,
-            userId,
-            newComment,
-          });
-          await addComment(post.id, userId, newComment); // ✅ newComment is message
+          await addComment(post.id, userId, newComment);
           setComments([...comments, { userName, text: newComment }]);
           setNewComment("");
         } catch (err) {
@@ -458,11 +429,82 @@ export const BlogApp = () => {
     };
 
     return (
-      <>
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 ">
-          {/* Content Section */}
+      <div className="relative w-full">
+        {/* Comment Modal Overlay */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 z-30 bg-black/20 backdrop-blur-sm flex items-end"
+              onClick={() => setOpen(false)} // clicking on backdrop closes modal
+            >
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside modal
+                className="w-full bg-white h-[380px] rounded-t-xl p-4 shadow-xl"
+              >
+                {/* Comment Input */}
+                <div className="flex items-start gap-2 mb-4">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="flex-1 border border-gray-300 p-2 rounded-md text-sm resize-none"
+                    placeholder="Write a comment..."
+                    rows={2}
+                  />
+                  <button
+                    onClick={handleCommentSubmit}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+
+                {/* Comment List */}
+                <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
+                  {comments.length > 0 ? (
+                    comments.map((comment, index) => (
+                      <div
+                        key={index}
+                        className="bg-white p-3 rounded-md shadow-sm border border-gray-200"
+                      >
+                        <p className="font-semibold text-gray-800">
+                          {comment.userName}
+                        </p>
+                        <p className="text-gray-700 text-sm">{comment.text}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">
+                      No comments yet. Be the first to comment!
+                    </p>
+                  )}
+                </div>
+
+                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="text-sm text-gray-600 hover:text-red-500"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Post Card */}
+        <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300">
           <div className="p-4" onDoubleClick={handleDoubleClick}>
-            {/* Post Content */}
             <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
               <img
                 src={post.coverImage}
@@ -473,7 +515,6 @@ export const BlogApp = () => {
               {showHeart && <HeartAnimation showHeart={showHeart} />}
             </div>
 
-            {/* Author Info */}
             <div className="flex items-center gap-3 mb-5">
               <img
                 src={user}
@@ -490,7 +531,7 @@ export const BlogApp = () => {
                   <p className="text-xs text-gray-500">
                     on {format(new Date(post.createdAt), "MMM d, yyyy")}
                   </p>
-                  <div className="text-sm items-end text-white bg-black  px-1.5 py-1 rounded-md -mt-2">
+                  <div className="text-sm items-end text-white bg-black px-1.5 py-1 rounded-md -mt-2">
                     {post.category}
                   </div>
                 </div>
@@ -504,25 +545,21 @@ export const BlogApp = () => {
               {post.excerpt}
             </p>
 
-            {/* Tags and Meta */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center justify-between w-full text-sm text-gray-500">
                 <div
                   onClick={() => navigateToPostPage(post)}
-                  className="text-blue-600 cursor-pointer  items-start"
+                  className="text-blue-600 cursor-pointer items-start"
                 >
                   <span className="z-10">View more</span>
                   <span className="absolute left-0 bottom-[-2px] h-[2px] w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
                 </div>
-
-                {/* Right: Read time */}
                 <span className="flex items-center gap-1">
                   <Clock size={16} />5 min read
                 </span>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between border-t pt-4 border-gray-100">
               <LikeButton
                 postId={post.id}
@@ -532,136 +569,24 @@ export const BlogApp = () => {
                 onToggleLike={handleToggleLike}
               />
               <div
-                className="md:mt-5.5 md:flex-10 flex items-center md:justify-around sm:justify-between border-none pt-4 
-             mt-[15px] ml-[-50px] gap-[10px]
-             sm:mt-0 sm:ml-0 sm:gap-0"
+                className="md:mt-2 md:flex-10 flex items-center md:justify-around sm:justify-between border-none pt-4 
+                 mt-[0px] ml-[-50px] gap-[10px]
+                 sm:mt-0 sm:ml-0 sm:gap-0"
               >
                 <button
                   onClick={() => setOpen(!isOpen)}
                   className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"
                 >
-                  <MessageCircle className="h-5 w-5" />
+                  <MessageCircle className="h-4 w-4" />
                   <span>Comment</span>
-                </button>
-
-                <button
-                  onClick={_toggleSaved}
-                  className={`flex items-center space-x-2 transition-all ${
-                    isSaved
-                      ? "text-yellow-500"
-                      : "text-gray-500 hover:text-yellow-500"
-                  }`}
-                >
-                  <Bookmark
-                    className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
-                  />
-                  <span className="hidden sm:inline font-medium">
-                    {isSaved ? "Saved" : "Save"}
-                  </span>
                 </button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Comments Panel */}
-        {isOpen && (
-          <div className="bg-white -mt-7 border border-gray-200 rounded-b-2xl p-4 shadow-inner">
-            {/* Comment Input */}
-            <div className="flex items-start gap-2 mb-4">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 border border-gray-300 p-2 rounded-md text-sm resize-none"
-                placeholder="Write a comment..."
-                rows={2}
-              />
-              <button
-                onClick={handleCommentSubmit}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                <Send size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
-              {comments.length > 0 ? (
-                comments.map((comment, index) => (
-                  <div
-                    key={index}
-                    className="bg-white p-3 rounded-md shadow-sm border border-gray-200"
-                  >
-                    <p className="font-semibold text-gray-800">
-                      {comment.userName}
-                    </p>
-                    <p className="text-gray-700 text-sm">{comment.text}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500">
-                  No comments yet. Be the first to comment!
-                </p>
-              )}
-            </div>
-
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-          </div>
-        )}
-      </>
+      </div>
     );
   };
-
-  const TrendingSidebar = useCallback(
-    () => (
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}
-        className="hidden lg:block lg:col-span-5 order-1 lg:order-2"
-      >
-        <div className="glass-effect rounded-xl p-6 sticky top-[100px] shadow-md bg-white/50 backdrop-blur-sm">
-          <div className="flex items-center space-x-2 mb-4">
-            <TrendingUp className="h-5 w-5 text-primary-600" />
-            <h2 className="text-lg font-semibold text-primary-800">
-              Trending Posts
-            </h2>
-          </div>
-          <div className="space-y-4">
-            {posts
-              .sort((a, b) => b.likes.length - a.likes.length)
-              .slice(0, 3)
-              .map((post) => (
-                <a
-                  key={post.id}
-                  className="flex space-x-4 group"
-                  onClick={() => {
-                    setActiveCategory(post.category);
-                    setCurrentView("home");
-                  }}
-                >
-                  {post.coverImage && (
-                    <img
-                      src={post.coverImage}
-                      alt={post.title}
-                      className="w-35 h-25 rounded-lg object-fit group-hover:ring-2 ring-primary-500 transition-all"
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-semibold group-hover:text-primary-600 transition-colors">
-                      {post.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {post.excerpt.substring(0, 60)}...
-                    </p>
-                  </div>
-                </a>
-              ))}
-          </div>
-        </div>
-      </motion.div>
-    ),
-    [posts, setActiveCategory, setCurrentView]
-  );
 
   const MainContent = useCallback(() => {
     if (isLoading) {
@@ -702,20 +627,26 @@ export const BlogApp = () => {
           </p>
         </header>
 
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map((post) => <PostCard key={post.id} post={post} />)
-        ) : (
-          <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No posts found
-            </h3>
-            <p className="text-gray-500">
-              {currentView === "saved"
-                ? "You haven't saved any posts yet. Browse and bookmark posts to see them here."
-                : "No posts available for this category at the moment. Check back later!"}
-            </p>
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:grid-cols-3 xl:gap-4">
+          {filteredPosts.length > 0 ? (
+            filteredPosts.map((post) => (
+              <div key={post.id} className="flex">
+                <PostCard post={post} />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-xl shadow-md p-8 text-center">
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                No posts found
+              </h3>
+              <p className="text-gray-500">
+                {currentView === "saved"
+                  ? "You haven't saved any posts yet. Browse and bookmark posts to see them here."
+                  : "No posts available for this category at the moment. Check back later!"}
+              </p>
+            </div>
+          )}
+        </div>
       </motion.div>
     );
   }, [isLoading, currentView, activeCategory, filteredPosts, PostCard]);
@@ -732,16 +663,13 @@ export const BlogApp = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="container mx-auto  pt-20 px-4">
+      <div className="container mx-auto pt-20 px-4">
         <div className="flex flex-col lg:flex-row gap-8">
           <MobileSidebar />
           <DesktopSidebar />
 
-          <div className="flex-1 from-blue-800 via-indigo-700 to-purple-800">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <TrendingSidebar />
-              <MainContent />
-            </div>
+          <div className="flex-1 md:p-4  from-blue-800 via-indigo-700 to-purple-800">
+            <MainContent />
           </div>
         </div>
       </div>

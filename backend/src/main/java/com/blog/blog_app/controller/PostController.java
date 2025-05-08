@@ -2,6 +2,7 @@ package com.blog.blog_app.controller;
 
 import com.blog.blog_app.dto.PostRequest;
 import com.blog.blog_app.dto.PostResponse;
+import com.blog.blog_app.model.PostModel;
 import com.blog.blog_app.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,30 @@ public class PostController {
         } catch (Exception e) {
             logger.error("Error retrieving posts: ", e);
             return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getPostsByUserId(@PathVariable Integer userId) {
+        logger.info("Received request to get posts for user: {}", userId);
+
+        try {
+            List<PostResponse> posts = postService.getPostsByUserId(userId);
+
+            if (posts.isEmpty()) {
+                logger.warn("No posts found for user: {}", userId);
+                return ResponseEntity.noContent().build(); // 204 No Content
+            }
+
+            logger.info("Found {} posts for user: {}", posts.size(), userId);
+            return ResponseEntity.ok(posts); // 200 OK with posts
+
+        } catch (RuntimeException e) {
+            logger.warn("Error retrieving posts for user: {}", userId);
+            return ResponseEntity.notFound().build(); // 404 Not Found
+        } catch (Exception e) {
+            logger.error("Internal server error retrieving posts for user {}: ", userId, e);
+            return ResponseEntity.internalServerError().body("Error retrieving posts: " + e.getMessage());
         }
     }
 

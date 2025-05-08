@@ -36,4 +36,9 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public User orElseThrow(Object object) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
+    }
 }

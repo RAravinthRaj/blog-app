@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -312,34 +313,32 @@ public class PostService {
 
     public List<Integer> getLikeUserIds(Integer postId, Integer userId) {
         List<Integer> likesJson = postRepository.getLikesByPostId(postId);
-        System.out.println(likesJson);
 
         if (likesJson == null) {
             throw new RuntimeException("Post not found with ID: " + postId);
         }
 
         try {
-            // Parse the JSON array of user IDs
-            // List<Integer> userIds = objectMapper.readValue(likesJson,
-            // objectMapper.getTypeFactory().constructCollectionType(List.class,
-            // Integer.class));
-
-            // If userId is provided, check if that user has liked the post
-            // if (userId != null) {
-            // if (userIds.contains(userId)) {
-            // // User has liked the post, return just that user's ID
-            // return List.of(userId);
-            // } else {
-            // // User has not liked the post, return empty list
-            // return Collections.emptyList();
-            // }
-            // }
 
             return likesJson;
         } catch (Exception e) {
             logger.error("Error parsing likes JSON for post ID: {}", postId, e);
             throw new RuntimeException("Error processing likes data: " + e.getMessage());
         }
+    }
+
+    // public List<PostModel> getPostsByUserId(Integer userId) {
+    // return postRepository.findByUserId(userId);
+    // }
+    @Transactional(readOnly = true)
+    public List<PostResponse> getPostsByUserId(@PathVariable Integer userId) {
+        logger.info("Fetching posts created by user ID: {} with like status", userId);
+
+        List<PostModel> posts = postRepository.findByUserId(userId);
+
+        return posts.stream()
+                .map(post -> convertToDto(post, userId))
+                .collect(Collectors.toList());
     }
 
 }

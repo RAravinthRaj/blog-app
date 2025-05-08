@@ -53,4 +53,6 @@ public interface PostRepository extends JpaRepository<PostModel, Long> {
 
     Optional<PostModel> findById(Integer id);
 
+    List<PostModel> findByUserId(Integer userId);
+
 }

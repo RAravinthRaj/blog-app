@@ -89,18 +89,6 @@ export const getUsernamesByIds = async (userIds: number[]) => {
   }
 };
 
-// export const getCommentsByPostId = async (
-//   postId: number
-// ): Promise<{ userName: string; text: string }[]> => {
-//   try {
-//     const response = await axios.get(`${API_URL}/posts/${postId}/comments`);
-//     return response.data;
-//   } catch (err) {
-//     console.error("Error fetching comments:", err);
-//     throw new Error("Failed to fetch comments");
-//   }
-// };
-
 export const getCommentsByPostId = async (
   postId: number
 ): Promise<{ userName: string; text: string }[]> => {
@@ -141,5 +129,22 @@ export const addComment = async (
   } catch (err) {
     console.error("Error adding comment:", err);
     throw new Error("Failed to add comment");
+  }
+};
+
+export const fetchPostsByUserId = async (userId: number): Promise<any[]> => {
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/api/posts/user/${userId}`, // Correct URL to fetch posts
+      {
+        headers: {
+          Accept: "application/json", // Expect JSON response
+        },
+      }
+    );
+    return response.data; // Return the list of posts
+  } catch (err) {
+    console.error("Error fetching posts:", err);
+    throw new Error("Failed to fetch posts");
   }
 };

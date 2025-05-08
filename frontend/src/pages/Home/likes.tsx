@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
-import { getLikesByPostId, getUsernamesByIds } from "../../api/index";
+import { getUsernamesByIds } from "../../api/index";
 import { toggleLike } from "../../api/likesApi";
-
 //
 interface LikesProps {
   postId: number;

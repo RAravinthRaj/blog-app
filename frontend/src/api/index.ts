@@ -89,29 +89,55 @@ export const getUsernamesByIds = async (userIds: number[]) => {
   }
 };
 
+// export const getCommentsByPostId = async (
+//   postId: number
+// ): Promise<{ userName: string; text: string }[]> => {
+//   try {
+//     const response = await axios.get(`${API_URL}/posts/${postId}/comments`);
+//     return response.data;
+//   } catch (err) {
+//     console.error("Error fetching comments:", err);
+//     throw new Error("Failed to fetch comments");
+//   }
+// };
+
 export const getCommentsByPostId = async (
   postId: number
 ): Promise<{ userName: string; text: string }[]> => {
   try {
-    const response = await axios.get(`${API_URL}/posts/${postId}/comments`);
-    return response.data;
+    const response = await axios.get(
+      `http://localhost:8080/api/posts/${postId}/comments`, // Ensure this URL works directly in browser
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+        },
+      }
+    );
+    return Array.isArray(response.data) ? response.data : [];
   } catch (err) {
     console.error("Error fetching comments:", err);
-    throw new Error("Failed to fetch comments");
+    return [];
   }
 };
 
-// Function to add a comment to a specific post
 export const addComment = async (
   postId: number,
   userId: number,
-  text: string
+  message: string
 ): Promise<void> => {
   try {
-    await axios.post(`${API_URL}/posts/${postId}/comments`, {
-      userId,
-      text,
-    });
+    await axios.post(
+      `http://localhost:8080/api/posts/${postId}/comments`, // ✅ correct URL
+      { message }, // ✅ backend expects "message"
+      {
+        params: { userId }, // ✅ query param
+        headers: {
+          "Content-Type": "application/json", // ✅ correct content type
+          Accept: "*/*", // ✅ as in Thunder Client
+        },
+      }
+    );
   } catch (err) {
     console.error("Error adding comment:", err);
     throw new Error("Failed to add comment");

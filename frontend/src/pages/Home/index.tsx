@@ -1,8 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MessageSquare,
-  Share2,
   Bookmark,
   TrendingUp,
   List,
@@ -33,7 +31,6 @@ import user from "../../assets/profile.png";
 import { format } from "date-fns";
 import { HeartAnimation } from "./heartAnimation";
 import { toggleLike } from "../../api/likesApi";
-import { Sheet } from "react-modal-sheet";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -67,6 +64,7 @@ export const BlogApp = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
   const [savedPosts, setSavedPosts] = useState([]);
+  const [isSaved, setIsSaved] = useState(false);
   const [category, setCategory] = useState("All");
   const [posts, setPosts] = useState([]);
   const [currentView, setCurrentView] = useState("home");
@@ -350,7 +348,6 @@ export const BlogApp = () => {
     const [newComment, setNewComment] = useState("");
     const [isOpen, setOpen] = useState(false);
     const [error, setError] = useState("");
-    const [showTextarea, setShowTextarea] = useState(false);
 
     const userId = parseInt(localStorage.getItem("id") || "0", 10);
     const userName = localStorage.getItem("username") || "";
@@ -377,6 +374,10 @@ export const BlogApp = () => {
       }
     };
 
+    const _toggleSaved = () => {
+      setIsSaved(!isSaved);
+    };
+
     const handleDoubleClick = async () => {
       if (!userId) return;
       if (!firstShowHeart) {
@@ -399,203 +400,63 @@ export const BlogApp = () => {
     };
 
     useEffect(() => {
-      if (isOpen) {
+      if (isOpen && post?.id) {
         const fetchComments = async () => {
           try {
             const fetched = await getCommentsByPostId(post.id);
-            setComments(Array.isArray(fetched) ? fetched : []);
+            console.log("Fetched comments:", fetched);
+
+            // Add a debug step to see the exact structure
+            if (fetched) {
+              console.log(
+                "First comment example:",
+                fetched[0] || "No comments"
+              );
+            }
+
+            // Process based on structure
+            if (Array.isArray(fetched)) {
+              // Make sure each comment has the fields you expect
+              const processedComments = fetched.map((comment) => ({
+                id: comment.id,
+                userId: comment.userId,
+                userName: comment.author,
+                text: comment.text || comment.content || comment.message || "",
+                timestamp: comment.timestamp || comment.createdAt || new Date(),
+              }));
+
+              setComments(processedComments);
+            } else {
+              console.error("Unexpected data format:", fetched);
+              setComments([]);
+            }
           } catch (err) {
             console.error("Failed to fetch comments", err);
             setError("Could not load comments.");
           }
         };
+
         fetchComments();
       }
-    }, [isOpen, post.id]);
+    }, [isOpen, post?.id]);
 
     const handleCommentSubmit = async () => {
       if (newComment.trim()) {
         try {
-          await addComment(post.id, userId, newComment);
+          console.log("Submitting comment:", {
+            postId: post.id,
+            userId,
+            newComment,
+          });
+          await addComment(post.id, userId, newComment); // ✅ newComment is message
           setComments([...comments, { userName, text: newComment }]);
           setNewComment("");
-          setShowTextarea(false);
         } catch (err) {
           console.error("Failed to add comment", err);
         }
       }
     };
 
-    const openSheet = () => setOpen(true);
-    const closeSheet = () => {
-      setOpen(false);
-      setShowTextarea(false);
-      setNewComment("");
-    };
-
-    // return (
-    //   <>
-    //     <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-    //       {/* Content Section */}
-    //       <div className="p-4" onDoubleClick={handleDoubleClick}>
-    //         <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
-    //           <img
-    //             src={post.coverImage}
-    //             alt={post.title}
-    //             className="w-full h-full mb-2 object-cover transition-transform duration-500 hover:scale-105"
-    //             loading="lazy"
-    //           />
-    //           {showHeart && <HeartAnimation showHeart={showHeart} />}
-    //         </div>
-
-    //         {/* Author info */}
-    //         <div className="flex items-center gap-3 mb-5">
-    //           <img
-    //             src={user}
-    //             alt={post.username}
-    //             className="w-12 h-12 rounded-full object-cover border-2 border-primary-500 shadow-sm"
-    //             loading="lazy"
-    //           />
-    //           <div>
-    //             <span className="text-lg font-semibold text-gray-800">
-    //               {post.username}
-    //             </span>
-    //             <p className="text-xs text-gray-500">
-    //               on {format(new Date(post.createdAt), "MMM d, yyyy")}
-    //             </p>
-    //           </div>
-    //         </div>
-
-    //         {/* Post title */}
-    //         <h2
-    //           onClick={() => {
-    //             navigateToPostPage(post);
-    //           }}
-    //           className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3"
-    //         >
-    //           {post.title}
-    //         </h2>
-
-    //         {/* Post excerpt */}
-    //         <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
-    //           {post.excerpt}
-    //         </p>
-
-    //         {/* Categories and reading time */}
-    //         <div className="flex items-center justify-between mb-5">
-    //           <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-1 rounded-full text-xs font-medium">
-    //             {post.category}
-    //           </span>
-    //           <div className="flex items-center gap-2 text-sm text-gray-500">
-    //             <span className="flex items-center gap-1">
-    //               <svg
-    //                 xmlns="http://www.w3.org/2000/svg"
-    //                 width="16"
-    //                 height="16"
-    //                 viewBox="0 0 24 24"
-    //                 fill="none"
-    //                 stroke="currentColor"
-    //                 strokeWidth="2"
-    //                 strokeLinecap="round"
-    //                 strokeLinejoin="round"
-    //               >
-    //                 <circle cx="12" cy="12" r="10"></circle>
-    //                 <polyline points="12 6 12 12 16 14"></polyline>
-    //               </svg>
-    //               5 min read
-    //             </span>
-    //           </div>
-    //         </div>
-
-    //         {/* Interaction buttons */}
-    //         <div className="flex items-center justify-between border-t pt-4 border-gray-100">
-    //           <LikeButton
-    //             postId={post.id}
-    //             userId={userId}
-    //             userName={userName}
-    //             likerIds={likerIds}
-    //             onToggleLike={handleToggleLike}
-    //           />
-    //           <button
-    //             onClick={openSheet}
-    //             className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600"
-    //           >
-    //             <MessageCircle className="h-5 w-5" />
-    //             <span>{comments.length} Comments</span>
-    //           </button>
-
-    //           <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
-    //             <Share2 size={18} />
-    //           </button>
-
-    //           <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
-    //             <Bookmark size={18} />
-    //           </button>
-    //         </div>
-    //       </div>
-    //     </div>
-
-    //     {/* Comment Sheet */}
-    //     <Sheet isOpen={isOpen} onClose={closeSheet}>
-    //       <Sheet.Container>
-    //         <Sheet.Header />
-    //         <Sheet.Content>
-    //           <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
-    //             {comments.length ? (
-    //               comments.map((comment, index) => (
-    //                 <div
-    //                   key={index}
-    //                   className="bg-gray-100 p-3 rounded-md text-sm"
-    //                 >
-    //                   <p className="font-semibold text-gray-800">
-    //                     {comment.userName}
-    //                   </p>
-    //                   <p className="text-gray-700">{comment.text}</p>
-    //                 </div>
-    //               ))
-    //             ) : (
-    //               <p className="text-gray-600">
-    //                 No comments yet. Be the first to comment!
-    //               </p>
-    //             )}
-    //           </div>
-
-    //           {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-
-    //           {/* Comment Input or Add Button */}
-    //           <div className="flex justify-between items-center p-3 bg-gray-50 border-t">
-    //             {showTextarea ? (
-    //               <div className="flex items-center w-full space-x-3">
-    //                 <textarea
-    //                   value={newComment}
-    //                   onChange={(e) => setNewComment(e.target.value)}
-    //                   className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm"
-    //                   placeholder="Write your comment..."
-    //                   aria-label="Write your comment"
-    //                   autoFocus
-    //                 />
-    //                 <button
-    //                   onClick={handleCommentSubmit}
-    //                   className="bg-blue-600 text-white p-3 rounded-full"
-    //                 >
-    //                   <Send className="h-5 w-5" />
-    //                 </button>
-    //               </div>
-    //             ) : (
-    //               <button
-    //                 onClick={() => setShowTextarea(true)}
-    //                 className="bg-blue-500 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-600"
-    //               >
-    //                 Add Comment
-    //               </button>
-    //             )}
-    //           </div>
-    //         </Sheet.Content>
-    //       </Sheet.Container>
-    //       <Sheet.Backdrop />
-    //     </Sheet>
-    //   </>
-    // );
     return (
       <>
         <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 ">
@@ -606,7 +467,7 @@ export const BlogApp = () => {
               <img
                 src={post.coverImage}
                 alt={post.title}
-                className="w-full h-full mb-2 object-cover transition-transform duration-500 hover:scale-105"
+                className="w-full h-full mb-2 object-fit transition-transform duration-500 hover:scale-105"
                 loading="lazy"
               />
               {showHeart && <HeartAnimation showHeart={showHeart} />}
@@ -620,21 +481,23 @@ export const BlogApp = () => {
                 className="w-12 h-12 rounded-full object-cover border-2 border-primary-500 shadow-sm"
                 loading="lazy"
               />
-              <div>
+
+              <div className="w-full">
                 <span className="text-lg font-semibold text-gray-800">
                   {post.username}
                 </span>
-                <p className="text-xs text-gray-500">
-                  on {format(new Date(post.createdAt), "MMM d, yyyy")}
-                </p>
+                <div className="items-center flex justify-between space-x-10">
+                  <p className="text-xs text-gray-500">
+                    on {format(new Date(post.createdAt), "MMM d, yyyy")}
+                  </p>
+                  <div className="text-sm items-end text-white bg-black  px-1.5 py-1 rounded-md -mt-2">
+                    {post.category}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Title & Excerpt */}
-            <h2
-              onClick={() => navigateToPostPage(post)}
-              className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3"
-            >
+            <h2 className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3">
               {post.title}
             </h2>
             <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
@@ -643,10 +506,16 @@ export const BlogApp = () => {
 
             {/* Tags and Meta */}
             <div className="flex items-center justify-between mb-5">
-              <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-1 rounded-full text-xs font-medium">
-                {post.category}
-              </span>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center justify-between w-full text-sm text-gray-500">
+                <div
+                  onClick={() => navigateToPostPage(post)}
+                  className="text-blue-600 cursor-pointer  items-start"
+                >
+                  <span className="z-10">View more</span>
+                  <span className="absolute left-0 bottom-[-2px] h-[2px] w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+                </div>
+
+                {/* Right: Read time */}
                 <span className="flex items-center gap-1">
                   <Clock size={16} />5 min read
                 </span>
@@ -662,19 +531,33 @@ export const BlogApp = () => {
                 likerIds={likerIds}
                 onToggleLike={handleToggleLike}
               />
-              <div className="mt-5.5 flex-5 flex flex-row items-center justify-around">
+              <div
+                className="md:mt-5.5 md:flex-10 flex items-center md:justify-around sm:justify-between border-none pt-4 
+             mt-[15px] ml-[-50px] gap-[10px]
+             sm:mt-0 sm:ml-0 sm:gap-0"
+              >
                 <button
                   onClick={() => setOpen(!isOpen)}
-                  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600"
+                  className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span>Comment</span>
                 </button>
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                  <Share2 size={18} />
-                </button>
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                  <Bookmark size={18} />
+
+                <button
+                  onClick={_toggleSaved}
+                  className={`flex items-center space-x-2 transition-all ${
+                    isSaved
+                      ? "text-yellow-500"
+                      : "text-gray-500 hover:text-yellow-500"
+                  }`}
+                >
+                  <Bookmark
+                    className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
+                  />
+                  <span className="hidden sm:inline font-medium">
+                    {isSaved ? "Saved" : "Save"}
+                  </span>
                 </button>
               </div>
             </div>
@@ -701,13 +584,12 @@ export const BlogApp = () => {
               </button>
             </div>
 
-            {/* Comment List */}
-            <div className="space-y-3 max-h-60 overflow-y-auto">
-              {comments.length ? (
+            <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
+              {comments.length > 0 ? (
                 comments.map((comment, index) => (
                   <div
                     key={index}
-                    className="bg-white p-3 rounded-md shadow-sm"
+                    className="bg-white p-3 rounded-md shadow-sm border border-gray-200"
                   >
                     <p className="font-semibold text-gray-800">
                       {comment.userName}

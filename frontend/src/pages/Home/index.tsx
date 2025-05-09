@@ -467,39 +467,24 @@ export const BlogApp = () => {
                   </button>
                 </div>
 
-                <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-lg p-2">
+                {/* Comment List */}
+                <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
                   {comments.length > 0 ? (
                     comments.map((comment, index) => (
                       <div
                         key={index}
                         className="bg-white p-3 rounded-md shadow-sm border border-gray-200"
                       >
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="flex -ml-2 gap-1 items-center">
-                            <img
-                              src={commentUser}
-                              className="h-8 w-8 rounded-full"
-                            />
-                            <p className="font-semibold text-gray-800">
-                              {comment.userName}
-                            </p>
-                          </div>
-
-                          <span className="text-xs text-gray-500">
-                            {format(
-                              new Date(comment.timestamp),
-                              "MMM d, yyyy • h:mm a"
-                            )}
-                          </span>
-                        </div>
+                        <p className="font-semibold text-gray-800">
+                          {comment.userName}
+                        </p>
                         <p className="text-gray-700 text-sm">{comment.text}</p>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No comments yet. Be the first to comment!</p>
-                    </div>
+                    <p className="text-gray-500">
+                      No comments yet. Be the first to comment!
+                    </p>
                   )}
                 </div>
 

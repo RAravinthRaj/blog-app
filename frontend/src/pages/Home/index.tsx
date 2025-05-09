@@ -139,7 +139,7 @@ export const BlogApp = () => {
       {
         name: "Lifestyle",
         icon: <Coffee className="h-5 w-5 text-yellow-500" />,
-        count: categoryCounts["LifeStyle"] ?? 0,
+        count: categoryCounts["Lifestyle"] ?? 0,
       },
       {
         name: "Health",

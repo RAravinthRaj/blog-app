@@ -86,6 +86,9 @@ const Profile = () => {
   };
 
   const _logout = () => {
+    localStorage.removeItem("id"); // or whatever key you use
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     toast.success("Logout Successfully");
     navigate("/");
   };

@@ -22,7 +22,7 @@ public class PostModel {
     @Column
     private String category;
 
-    @Column(name = "cover_image")
+    @Column(name = "cover_image", columnDefinition = "LONGTEXT")
     private String coverImage;
 
     @Column(columnDefinition = "TEXT", nullable = false)

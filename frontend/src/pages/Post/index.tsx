@@ -1,202 +1,631 @@
+// import { useState, useEffect } from "react";
+// import { format } from "date-fns";
+// import { MessageCircle, Send, Clock, ArrowLeft } from "lucide-react";
+// import { motion } from "framer-motion";
+// import { useLocation, useNavigate } from "react-router-dom";
+// import { Footer, Navbar } from "../../components";
+// import commentUser from "../../assets/comment-user.jpg";
+// import {
+//   getCommentsByPostId,
+//   addComment,
+//   getLikesByPostId,
+// } from "../../api/index";
+// import { toggleLike } from "../../api/likesApi";
+// import { HeartAnimation } from "../Home/heartAnimation";
+// import user from "../../assets/profile.png";
+// import LikeButton from "../../components/likes";
+
+// export const PostPage = () => {
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [isSaved, setIsSaved] = useState(false);
+//   const [isAnimating, setIsAnimating] = useState(false);
+//   const [page, setPage] = useState(1);
+//   const [likerIds, setLikerIds] = useState<number[]>([]);
+//   const [showHeart, setShowHeart] = useState(false);
+//   const [showFirstHeart, setShowFirstHeart] = useState(false);
+//   const [comments, setComments] = useState<any[]>([]);
+//   const [newComment, setNewComment] = useState("");
+//   const [error, setError] = useState("");
+
+//   const location = useLocation();
+//   const navigate = useNavigate();
+//   const { post } = location.state || { post: null };
+
+//   const userId = parseInt(localStorage.getItem("id") || "0", 10);
+//   const localUserName = localStorage.getItem("username");
+
+//   useEffect(() => {
+//     window.scrollTo(0, 0);
+
+//     if (!post) {
+//       navigate("/");
+//       return;
+//     }
+
+//     const fetchLikes = async () => {
+//       try {
+//         const likers = await getLikesByPostId(post.id);
+//         setLikerIds(likers || []);
+//       } catch (error) {
+//         console.error("Error fetching likes:", error);
+//         setLikerIds([]);
+//       }
+//     };
+
+//     const fetchInitialComments = async () => {
+//       try {
+//         const fetchedComments = await getCommentsByPostId(post.id, 1);
+//         if (Array.isArray(fetchedComments)) {
+//           const processedComments = fetchedComments.map((comment) => ({
+//             id: comment.id,
+//             userId: comment.userId,
+//             userName: comment.author || "Unknown User",
+//             content: comment.message || comment.content || "",
+//             timestamp: comment.createdAt || new Date(),
+//             likes: comment.likes || 0,
+//           }));
+//           setComments(processedComments);
+//         } else {
+//           console.error("Unexpected data format:", fetchedComments);
+//           setComments([]);
+//         }
+//       } catch (err) {
+//         console.error("Failed to fetch comments", err);
+//         setError("Could not load comments.");
+//       } finally {
+//       }
+//     };
+
+//     fetchLikes();
+//     fetchInitialComments();
+//   }, [post, navigate]);
+
+//   const handleToggleLike = async () => {
+//     const hasLiked = likerIds.includes(userId);
+//     try {
+//       if (hasLiked) {
+//         setLikerIds((prev) => prev.filter((id) => id !== userId));
+//       } else {
+//         setLikerIds((prev) => [...prev, userId]);
+//       }
+//       await toggleLike(post.id, userId);
+//     } catch (error) {
+//       console.error("Error toggling like:", error);
+//     }
+//   };
+
+//   const handleDoubleClick = async () => {
+//     if (!userId) return;
+//     if (!showFirstHeart) {
+//       const hasLiked = likerIds.includes(userId);
+//       if (!hasLiked) {
+//         setLikerIds((prev) => [...prev, userId]);
+//         try {
+//           await toggleLike(post.id, userId);
+//         } catch (error) {
+//           console.error("Error toggling like:", error);
+//           setLikerIds((prev) => prev.filter((id) => id !== userId));
+//         }
+//       }
+//       setShowFirstHeart(true);
+//     }
+//     setShowHeart(true);
+//     setTimeout(() => {
+//       setShowHeart(false);
+//     }, 1000);
+//   };
+
+//   const handleCommentSubmit = async (e) => {
+//     e.preventDefault();
+//     if (!newComment.trim() || !userId) return;
+
+//     setIsLoading(true);
+
+//     try {
+//       const response = await addComment(post.id, userId, newComment);
+
+//       const newCommentObj = {
+//         id: response?.id || Date.now(),
+//         userId: userId,
+//         userName: userName,
+//         content: newComment,
+//         timestamp: new Date(),
+//         likes: 0,
+//       };
+
+//       setComments((prev) => [newCommentObj, ...prev]);
+//       setNewComment("");
+//     } catch (err) {
+//       console.error("Failed to add comment", err);
+//       setError("Failed to post comment. Please try again.");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="bg-gray-50 min-h-screen">
+//       <div className="mb-16">
+//         <Navbar />
+//       </div>
+
+//       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+//         <div className="mb-6">
+//           <button
+//             onClick={() => navigate("/home")}
+//             className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors group"
+//           >
+//             <ArrowLeft className="h-5 w-5" />
+//             <span className="font-medium relative">
+//               Back to Home
+//               <span className="absolute left-0 bottom-[-2px] h-[2px] w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+//             </span>
+//           </button>
+//         </div>
+
+//         <motion.article
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ duration: 0.5 }}
+//           className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl mb-10"
+//         >
+//           {post.coverImage && (
+//             <div
+//               className="relative h-64 sm:h-96 overflow-hidden"
+//               onDoubleClick={handleDoubleClick}
+//             >
+//               <img
+//                 src={post.coverImage}
+//                 alt={post.title}
+//                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+//               />
+//               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+
+//               {/* Category Badge */}
+//               <div className="absolute bottom-6 left-6 z-10">
+//                 <span className="bg-blue-600 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider text-white">
+//                   {post.category}
+//                 </span>
+//               </div>
+
+//               {<HeartAnimation showHeart={showHeart} />}
+//             </div>
+//           )}
+
+//           <div className="p-6 sm:p-10">
+//             {/* Post Metadata */}
+//             <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+//               <div className="flex items-center gap-3">
+//                 <span>
+//                   {format(new Date(post.createdAt), "MMM d, yyyy • h:mm a")}
+//                 </span>
+//                 <span>•</span>
+//                 <span className="flex items-center gap-1">
+//                   <Clock size={16} />5 min read
+//                 </span>
+//               </div>
+//             </div>
+
+//             {/* Author Info */}
+//             <div className="flex items-center space-x-4 mb-8 border-b border-gray-100 pb-6">
+//               <img
+//                 src={user}
+//                 alt={post.username}
+//                 className="w-12 h-12 rounded-full border-2 border-blue-500 shadow-md"
+//               />
+//               <div>
+//                 <p className="font-semibold text-gray-900">{post.username}</p>
+//                 <p className="text-sm text-gray-500">Author</p>
+//               </div>
+//             </div>
+//             <div>
+//               <h1 className="text-2xl sm:text-4xl font-bold mb-6 text-gray-900 leading-tight">
+//                 {post.title}
+//               </h1>
+//               <div className="text-md mb-6 text-gray-900 leading-tight">
+//                 {post.excerpt}
+//               </div>
+//             </div>
+
+//             <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+//               <div className="flex items-end space-x-6">
+//                 <motion.button
+//                   whileTap={{ scale: 0.9 }}
+//                   onClick={handleToggleLike}
+//                   disabled={isAnimating}
+//                   className={`flex items-center space-x-2 transition-all ${
+//                     likerIds.includes(userId)
+//                       ? "text-red-500"
+//                       : "text-gray-500 hover:text-red-500"
+//                   }`}
+//                 >
+//                   <LikeButton
+//                     postId={post.id}
+//                     userId={userId}
+//                     userName={localUserName ?? ""}
+//                     likerIds={likerIds}
+//                     onToggleLike={handleToggleLike}
+//                   />
+//                 </motion.button>
+
+//                 <button className="flex items-center space-x-2 -mt-5 text-gray-500 hover:text-blue-600 transition-all">
+//                   <MessageCircle className="h-4 w-4" />
+//                   <span className="text-sm">{comments.length} Comments</span>
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </motion.article>
+
+//         {/* Comments Section */}
+//         <motion.div
+//           id="comments-section"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ duration: 0.5, delay: 0.2 }}
+//           className="bg-white rounded-2xl shadow-lg p-6 sm:p-8"
+//         >
+//           <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-900 flex items-center">
+//             <MessageCircle className="h-6 w-6 mr-2 text-blue-600" />
+//             Comments ({comments.length})
+//           </h2>
+
+//           {/* Comment Form */}
+//           <form onSubmit={handleCommentSubmit} className="mb-8">
+//             <div className="relative">
+//               <textarea
+//                 value={newComment}
+//                 onChange={(e) => setNewComment(e.target.value)}
+//                 placeholder="Share your thoughts..."
+//                 className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+//                 rows={3}
+//               />
+//               <button
+//                 type="submit"
+//                 disabled={isLoading || !newComment.trim()}
+//                 className={`absolute bottom-3 right-3 p-2 rounded-full ${
+//                   isLoading || !newComment.trim()
+//                     ? "bg-gray-300 cursor-not-allowed"
+//                     : "bg-blue-600 hover:bg-blue-700 transition-colors"
+//                 } text-white`}
+//               >
+//                 <Send className="h-5 w-5" />
+//               </button>
+//             </div>
+//             {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+//           </form>
+
+//           {/* Comments List */}
+//           <div className="space-y-6">
+//             {comments.length > 0 ? (
+//               comments.map((comment) => (
+//                 <motion.div
+//                   key={comment.id}
+//                   initial={{ opacity: 0, y: 10 }}
+//                   animate={{ opacity: 1, y: 0 }}
+//                   transition={{ duration: 0.3 }}
+//                   className="flex space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100"
+//                 >
+//                   <img src={commentUser} className="w-10 h-10 rounded-full" />
+//                   <div className="flex-1">
+//                     <div className="flex flex-wrap items-center gap-2">
+//                       <span className="font-medium text-gray-900">
+//                         {comment.userName}
+//                       </span>
+//                       <span className="text-xs text-gray-500">
+//                         {format(
+//                           new Date(comment.timestamp),
+//                           "MMM d, yyyy • h:mm a"
+//                         )}
+//                       </span>
+//                     </div>
+//                     <p className="mt-2 text-gray-700">{comment.content}</p>
+//                   </div>
+//                 </motion.div>
+//               ))
+//             ) : (
+//               <div className="text-center py-8 text-gray-500">
+//                 <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+//                 <p>No comments yet. Be the first to comment!</p>
+//               </div>
+//             )}
+//           </div>
+//         </motion.div>
+//       </div>
+
+//       <div className="mt-16">
+//         <Footer />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default PostPage;
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { MessageSquare, Share2, Bookmark, Heart, Send } from "lucide-react";
+import { MessageCircle, Send, Clock, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Footer, Navbar } from "../../components";
-import { IPost } from "../../types/index";
-import { useLocation } from "react-router-dom";
+import commentUser from "../../assets/comment-user.jpg";
+import {
+  getCommentsByPostId,
+  addComment,
+  getLikesByPostId,
+} from "../../api/index";
+import { toggleLike } from "../../api/likesApi";
+import { HeartAnimation } from "../Home/heartAnimation";
+import user from "../../assets/profile.png";
+import LikeButton from "../../components/likes";
 
-export const Post = () => {
-  const [newComment, setNewComment] = useState("");
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [likesCount, setLikesCount] = useState(150);
-  const [localComments, setLocalComments] = useState([]);
+export const PostPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [likerIds, setLikerIds] = useState<number[]>([]);
+  const [showHeart, setShowHeart] = useState(false);
+  const [showFirstHeart, setShowFirstHeart] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [error, setError] = useState("");
 
   const location = useLocation();
-  const { post } = location.state as { post: IPost };
+  const navigate = useNavigate();
+  const { post } = location.state || { post: null };
 
-  // if (!post) return <p className="text-red-500">Post not found.</p>;
-  // console.log(post);
-
-  // const post = {
-  //   id: 1,
-  //   title: "The Future of Web Development: Trends to Watch",
-  //   category: "Web Development",
-  //   coverImage: "https://via.placeholder.com/800x400",
-  //   createdAt: "2025-04-24T08:00:00Z",
-  //   content:
-  //     "<p>The web development industry is evolving faster than ever before. From modern frameworks to AI-driven tools, we explore what the future holds for developers worldwide.</p><h2>1. AI-Assisted Development</h2><p>Artificial intelligence is revolutionizing how we write and debug code. Developers are increasingly relying on AI pair programmers to boost productivity and solve complex problems more efficiently.</p><h2>2. WebAssembly Expansion</h2><p>WebAssembly continues to grow in popularity, enabling high-performance applications to run directly in the browser. This technology bridges the gap between web and native applications.</p><h2>3. Edge Computing</h2><p>With the rise of edge computing, web applications are becoming faster and more reliable by moving computation closer to the user.</p>",
-  //   likes: 150,
-  //   author: {
-  //     username: "john_doe",
-  //     avatar: "https://via.placeholder.com/40",
-  //     bio: "A passionate web developer with a love for new technologies.",
-  //   },
-  // };
-
-  const initialComments = [
-    {
-      id: 1,
-      author: {
-        username: "jane_smith",
-        avatar: "https://via.placeholder.com/40",
-      },
-      content:
-        "This is a great read! I agree with most of the trends you mentioned, especially the rise of AI in development.",
-      createdAt: "2025-04-24T09:00:00Z",
-      likes: 12,
-    },
-    {
-      id: 2,
-      author: {
-        username: "alex_brown",
-        avatar: "https://via.placeholder.com/40",
-      },
-      content:
-        "Looking forward to seeing how these trends unfold in the next few years. Exciting times for developers!",
-      createdAt: "2025-04-24T09:30:00Z",
-      likes: 8,
-    },
-  ];
+  const userId = parseInt(localStorage.getItem("id") || "0", 10);
+  const localUserName = localStorage.getItem("username");
 
   useEffect(() => {
-    setLocalComments(initialComments);
-  }, []);
+    window.scrollTo(0, 0);
 
-  const handleSubmitComment = (e: { preventDefault: () => void }) => {
+    if (!post) {
+      navigate("/");
+      return;
+    }
+
+    const fetchLikes = async () => {
+      try {
+        const likers = await getLikesByPostId(post.id);
+        setLikerIds(likers || []);
+      } catch (error) {
+        console.error("Error fetching likes:", error);
+        setLikerIds([]);
+      }
+    };
+
+    const fetchInitialComments = async () => {
+      try {
+        const fetchedComments = await getCommentsByPostId(post.id, 1);
+        if (Array.isArray(fetchedComments)) {
+          const processedComments = fetchedComments.map((comment) => ({
+            id: comment.id,
+            userId: comment.userId,
+            userName: comment.author || "Unknown User",
+            content: comment.message || comment.content || "",
+            timestamp: comment.createdAt || new Date(),
+            likes: comment.likes || 0,
+          }));
+          setComments(processedComments);
+        } else {
+          console.error("Unexpected data format:", fetchedComments);
+          setComments([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch comments", err);
+        setError("Could not load comments.");
+      } finally {
+      }
+    };
+
+    fetchLikes();
+    fetchInitialComments();
+  }, [post, navigate]);
+
+  useEffect(() => {
+    const fetchLikes = async () => {
+      const likers = await getLikesByPostId(post.id);
+      setLikerIds(likers);
+    };
+    fetchLikes();
+  }, [post.id]);
+
+  const handleToggleLike = async () => {
+    const hasLiked = likerIds.includes(userId);
+    try {
+      if (hasLiked) {
+        setLikerIds((prev) => prev.filter((id) => id !== userId));
+      } else {
+        setLikerIds((prev) => [...prev, userId]);
+      }
+      await toggleLike(post.id, userId);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  };
+
+  const handleDoubleClick = async () => {
+    if (!userId) return;
+    if (!showFirstHeart) {
+      const hasLiked = likerIds.includes(userId);
+      if (!hasLiked) {
+        setLikerIds((prev) => [...prev, userId]);
+        try {
+          await toggleLike(post.id, userId);
+        } catch (error) {
+          console.error("Error toggling like:", error);
+          setLikerIds((prev) => prev.filter((id) => id !== userId)); // rollback
+        }
+      }
+      setShowFirstHeart(true); // only once
+    }
+    setShowHeart(true);
+    setTimeout(() => {
+      setShowHeart(false);
+    }, 1000);
+  };
+
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !userId) return;
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await addComment(post.id, userId, newComment);
+
       const newCommentObj = {
-        id: localComments.length + 1,
-        author: {
-          username: "current_user",
-          avatar: "https://via.placeholder.com/40",
-        },
+        id: response?.id || Date.now(),
+        userId: userId,
+        userName: localUserName || "Anonymous",
         content: newComment,
-        createdAt: new Date().toISOString(),
+        timestamp: new Date(),
         likes: 0,
       };
 
-      setLocalComments([...localComments, newCommentObj]);
+      setComments((prev) => [newCommentObj, ...prev]);
       setNewComment("");
+    } catch (err) {
+      console.error("Failed to add comment", err);
+      setError("Failed to post comment. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 600);
-  };
-
-  const toggleLike = () => {
-    setIsLiked(!isLiked);
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
-  };
-
-  const toggleSave = () => {
-    setIsSaved(!isSaved);
+    }
   };
 
   return (
-    <div>
+    <div className="bg-gray-50 min-h-screen">
       <div className="mb-16">
         <Navbar />
       </div>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-0 py-8">
-        <article className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl mb-10">
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate("/home")}
+            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors group"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-medium relative">
+              Back to Home
+              <span className="absolute left-0 bottom-[-2px] h-[2px] w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+            </span>
+          </button>
+        </div>
+
+        <motion.article
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl mb-10"
+        >
           {post.coverImage && (
-            <div className="relative h-64 sm:h-96 overflow-hidden">
+            <div
+              className="relative h-64 sm:h-96 overflow-hidden"
+              onDoubleClick={handleDoubleClick}
+            >
               <img
                 src={post.coverImage}
                 alt={post.title}
                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 p-6 text-white">
-                <span className="bg-indigo-600 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+
+              {/* Category Badge */}
+              <div className="absolute bottom-6 left-6 z-10">
+                <span className="bg-blue-600 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider text-white">
                   {post.category}
                 </span>
               </div>
+
+              {<HeartAnimation showHeart={showHeart} />}
             </div>
           )}
+
           <div className="p-6 sm:p-10">
-            <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-              <span>{format(new Date(post.createdAt), "MMM d, yyyy")}</span>
-              <span>•</span>
-              <span>5 min read</span>
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-bold mb-6 text-gray-900 leading-tight">
-              {post.title}
-            </h1>
-            <div className="flex items-center space-x-4 mb-8 border-b border-gray-100 pb-6">
-              <img
-                src={post.coverImage || "https://via.placeholder.com/40"}
-                alt={post.username}
-                className="w-12 h-12 rounded-full border-2 border-indigo-500"
-              />
-              <div>
-                <p className="font-medium text-gray-900">{post.username}</p>
+            {/* Post Metadata */}
+            <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+              <div className="flex items-center gap-3">
+                <span>
+                  {format(new Date(post.createdAt), "MMM d, yyyy • h:mm a")}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Clock size={16} />5 min read
+                </span>
               </div>
             </div>
-            <div
-              className="prose max-w-none mb-8 text-gray-700"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
+
+            {/* Author Info */}
+            <div className="flex items-center space-x-4 mb-8 border-b border-gray-100 pb-6">
+              <img
+                src={user}
+                alt={post.username}
+                className="w-12 h-12 rounded-full border-2 border-blue-500 shadow-md"
+              />
+              <div>
+                <p className="font-semibold text-gray-900">{post.username}</p>
+                <p className="text-sm text-gray-500">Author</p>
+              </div>
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-bold mb-6 text-gray-900 leading-tight">
+                {post.title}
+              </h1>
+              <div className="text-md mb-6 text-gray-900 leading-tight">
+                {post.excerpt}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-              <div className="flex items-center space-x-6">
-                <button
-                  onClick={toggleLike}
+              <div className="flex items-end space-x-6">
+                <div
                   className={`flex items-center space-x-2 transition-all ${
-                    isLiked
+                    likerIds.includes(userId)
                       ? "text-red-500"
                       : "text-gray-500 hover:text-red-500"
                   }`}
                 >
-                  <Heart
-                    className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`}
+                  <LikeButton
+                    postId={post.id}
+                    userId={userId}
+                    userName={localUserName ?? ""}
+                    likerIds={likerIds}
+                    onToggleLike={handleToggleLike}
                   />
-                  <span className="font-medium">{likesCount}</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-500 hover:text-indigo-600 transition-all">
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="font-medium">{localComments.length}</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-all">
-                  <Share2 className="h-5 w-5" />
-                  <span className="hidden sm:inline font-medium">Share</span>
+                </div>
+
+                <button className="flex items-center space-x-2 -mt-5 text-gray-500 hover:text-blue-600 transition-all">
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-sm">{comments.length} Comments</span>
                 </button>
               </div>
-              <button
-                onClick={toggleSave}
-                className={`flex items-center space-x-2 transition-all ${
-                  isSaved
-                    ? "text-yellow-500"
-                    : "text-gray-500 hover:text-yellow-500"
-                }`}
-              >
-                <Bookmark
-                  className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
-                />
-                <span className="hidden sm:inline font-medium">
-                  {isSaved ? "Saved" : "Save"}
-                </span>
-              </button>
             </div>
           </div>
-        </article>
+        </motion.article>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-900">
-            Comments ({localComments.length})
+        {/* Comments Section */}
+        <motion.div
+          id="comments-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-white rounded-2xl shadow-lg p-6 sm:p-8"
+        >
+          <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-900 flex items-center">
+            <MessageCircle className="h-6 w-6 mr-2 text-blue-600" />
+            Comments ({comments.length})
           </h2>
-          <form onSubmit={handleSubmitComment} className="mb-8">
+
+          {/* Comment Form */}
+          <form onSubmit={handleCommentSubmit} className="mb-8">
             <div className="relative">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Share your thoughts..."
-                className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                 rows={3}
               />
               <button
@@ -205,65 +634,58 @@ export const Post = () => {
                 className={`absolute bottom-3 right-3 p-2 rounded-full ${
                   isLoading || !newComment.trim()
                     ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                    : "bg-blue-600 hover:bg-blue-700 transition-colors"
                 } text-white`}
               >
                 <Send className="h-5 w-5" />
               </button>
             </div>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           </form>
 
+          {/* Comments List */}
           <div className="space-y-6">
-            {localComments.map((comment) => (
-              <div
-                key={comment.id}
-                className="flex space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <img
-                  src={comment.avatar || "https://via.placeholder.com/40"}
-                  alt={comment.author.username}
-                  className="w-10 h-10 rounded-full"
-                />
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-gray-900">
-                      {comment.author.username}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {format(
-                        new Date(comment.createdAt),
-                        "MMM d, yyyy • h:mm a"
-                      )}
-                    </span>
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <motion.div
+                  key={comment.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100"
+                >
+                  <img src={commentUser} className="w-10 h-10 rounded-full" />
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-gray-900">
+                        {comment.userName}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {format(
+                          new Date(comment.timestamp),
+                          "MMM d, yyyy • h:mm a"
+                        )}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-gray-700">{comment.content}</p>
                   </div>
-                  <p className="mt-2 text-gray-700">{comment.content}</p>
-                  <div className="flex items-center mt-2 space-x-4">
-                    <button className="text-xs text-gray-500 hover:text-indigo-600 transition-colors">
-                      Like ({comment.likes})
-                    </button>
-                    <button className="text-xs text-gray-500 hover:text-indigo-600 transition-colors">
-                      Reply
-                    </button>
-                  </div>
-                </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No comments yet. Be the first to comment!</p>
               </div>
-            ))}
+            )}
           </div>
-
-          {localComments.length > 3 && (
-            <div className="text-center mt-8">
-              <button className="px-6 py-2 border border-indigo-500 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors">
-                Load More Comments
-              </button>
-            </div>
-          )}
-        </div>
+        </motion.div>
       </div>
-      <div>
+
+      <div className="mt-16">
         <Footer />
       </div>
     </div>
   );
 };
 
-export default Post;
+export default PostPage;

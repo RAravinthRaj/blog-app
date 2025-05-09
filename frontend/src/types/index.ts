@@ -15,10 +15,10 @@ export interface IPost {
   coverImage: string;
   category: string;
   tags: string[] | null;
-  likes: number;
+  likes: number[];
   commentCount: number;
-  createdAt: string; // or Date if parsed
-  updatedAt: string; // or Date if parsed
+  createdAt: string;
+  updatedAt: string;
   userId: number;
   username: string;
 }

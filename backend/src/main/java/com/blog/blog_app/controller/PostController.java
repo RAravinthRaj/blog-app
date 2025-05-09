@@ -39,6 +39,35 @@ public class PostController {
         }
     }
 
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<?> deletePost(@PathVariable Integer postId, @RequestParam("userId") Integer userId) {
+        logger.info("Received request to delete post with ID: {} by user ID: {}", postId, userId);
+        try {
+            postService.deletePost(postId, userId);
+            logger.info("Post deleted successfully with ID: {}", postId);
+            return ResponseEntity.ok("Post deleted successfully");
+        } catch (Exception e) {
+            logger.error("Error deleting post: ", e);
+            return ResponseEntity.internalServerError().body("Failed to delete post: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<?> updatePost(@PathVariable Integer postId,
+            @RequestBody PostRequest postRequest,
+            @RequestParam("userId") Integer userId) {
+        logger.info("Received request to update post with ID: {} by user ID: {}", postId, userId);
+        try {
+            postRequest.setId(postId);
+            PostResponse updatedPost = postService.updatePost(postRequest, userId);
+            logger.info("Post updated successfully with ID: {}", updatedPost.getId());
+            return ResponseEntity.ok(updatedPost);
+        } catch (Exception e) {
+            logger.error("Error updating post: ", e);
+            return ResponseEntity.internalServerError().body("Failed to update post: " + e.getMessage());
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<PostResponse>> getAllPosts(
             @RequestParam(required = false) Integer userId) {

@@ -148,3 +148,14 @@ export const fetchPostsByUserId = async (userId: number): Promise<any[]> => {
     throw new Error("Failed to fetch posts");
   }
 };
+
+export const deletePost = async (postId: any, userId: any) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/posts/${postId}?userId=${userId}`
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

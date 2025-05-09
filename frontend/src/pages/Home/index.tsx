@@ -27,6 +27,7 @@ import {
 import { IPost } from "../../types/index";
 import LikeButton from "../../components/likes";
 import user from "../../assets/profile.png";
+import commentUser from "../../assets/comment-user.jpg";
 import { format } from "date-fns";
 import { HeartAnimation } from "./heartAnimation";
 import { toggleLike } from "../../api/likesApi";
@@ -399,8 +400,8 @@ export const BlogApp = () => {
                 id: comment.id,
                 userId: comment.userId,
                 userName: comment.author,
-                text: comment.text || comment.content || comment.message || "",
-                timestamp: comment.timestamp || comment.createdAt || new Date(),
+                text: comment.message || "",
+                timestamp: comment.createdAt || new Date(),
               }));
               setComments(processedComments);
             } else {
@@ -466,17 +467,31 @@ export const BlogApp = () => {
                   </button>
                 </div>
 
-                {/* Comment List */}
-                <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
+                <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-lg p-2">
                   {comments.length > 0 ? (
                     comments.map((comment, index) => (
                       <div
                         key={index}
                         className="bg-white p-3 rounded-md shadow-sm border border-gray-200"
                       >
-                        <p className="font-semibold text-gray-800">
-                          {comment.userName}
-                        </p>
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="flex -ml-2 gap-1 items-center">
+                            <img
+                              src={commentUser}
+                              className="h-8 w-8 rounded-full"
+                            />
+                            <p className="font-semibold text-gray-800">
+                              {comment.userName}
+                            </p>
+                          </div>
+
+                          <span className="text-xs text-gray-500">
+                            {format(
+                              new Date(comment.timestamp),
+                              "MMM d, yyyy • h:mm a"
+                            )}
+                          </span>
+                        </div>
                         <p className="text-gray-700 text-sm">{comment.text}</p>
                       </div>
                     ))

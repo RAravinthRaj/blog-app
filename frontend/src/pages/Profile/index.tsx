@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import profile from "../../assets/profile.png";
 import { Navbar, Footer } from "../../components";
 import { useNavigate } from "react-router-dom";
-import { Clock, LogOutIcon, MessageCircle, Send } from "lucide-react";
+import { Clock, LogOutIcon, MessageCircle, Send, X } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   addComment,
@@ -17,6 +17,7 @@ import { HeartAnimation } from "../Home/heartAnimation";
 import { format } from "date-fns";
 import { IPost } from "../../types";
 import user from "../../assets/profile.png";
+import ThreeDot from "../Profile/ThreeDot";
 
 const Profile = () => {
   const [settings, setSettings] = useState({
@@ -25,10 +26,11 @@ const Profile = () => {
   });
 
   const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -37,18 +39,17 @@ const Profile = () => {
     if (storedUsername) setUserName(storedUsername);
     if (storedEmail) setEmail(storedEmail);
 
-    // Fetch posts for the current user
-    const userId = parseInt(localStorage.getItem("id") || "0"); // Assuming userId is stored in localStorage
+    const userId = parseInt(localStorage.getItem("id") || "0");
     if (userId) {
       const getPosts = async () => {
         try {
           const fetchedPosts = await fetchPostsByUserId(userId);
 
-          setPosts(fetchedPosts); // Store posts in state
+          setPosts(fetchedPosts);
         } catch (err) {
           setError("Failed to fetch posts.");
         } finally {
-          setLoading(false); // Set loading to false after the API call
+          setLoading(false);
         }
       };
 
@@ -259,6 +260,9 @@ const Profile = () => {
         {/* Post Card */}
         <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300">
           <div className="p-4" onDoubleClick={handleDoubleClick}>
+            <div className="-mt-2">
+              <ThreeDot post={post} />
+            </div>
             <div className="relative w-full mb-4 h-64 overflow-hidden cursor-pointer">
               <img
                 src={post.coverImage}
@@ -472,7 +476,12 @@ const Profile = () => {
                   Logout
                 </div>
               </div>
-              <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-300">
+              <button
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-300"
+                onClick={(e) => {
+                  toast.success("Profile Updated");
+                }}
+              >
                 Save Changes
               </button>
             </div>

@@ -2,13 +2,18 @@ package com.blog.blog_app.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 public class CommentResponse {
     private Integer id;
     private Integer postId;
     private Integer userId;
     private String author;
     private String message;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
     // Getters and Setters

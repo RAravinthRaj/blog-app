@@ -68,8 +68,6 @@ export const CreatePost = () => {
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
 
-    console.log("Form submitted");
-
     if (validateForm()) {
       setIsSubmitting(true);
 
@@ -81,8 +79,6 @@ export const CreatePost = () => {
         content,
       };
 
-      console.log("Post Data:", postData);
-
       try {
         const storedId = localStorage.getItem("id");
 
@@ -91,16 +87,12 @@ export const CreatePost = () => {
         }
 
         const userId = parseInt(storedId, 10);
-        console.log("User ID:", userId);
 
         const response = await createPost(postData, userId);
 
         setShowSuccessMessage(true);
-        console.log("Post Created Response:", response.data);
 
-        setTimeout(() => {
-          // Reset form or redirect, if needed
-        }, 2000);
+        setTimeout(() => {}, 2000);
       } catch (error) {
         if (axios.isAxiosError(error)) {
           console.error("Axios error response:", error.response?.data);
@@ -114,9 +106,7 @@ export const CreatePost = () => {
     }
   };
 
-  // Move to next step in multi-step form
   const goToNextStep = () => {
-    // Validate current step before proceeding
     let currentStepValid = true;
     const newErrors: Record<string, string> = {};
 
@@ -142,12 +132,10 @@ export const CreatePost = () => {
     }
   };
 
-  // Go back to previous step
   const goToPreviousStep = () => {
     setFormStep(formStep - 1);
   };
 
-  // Form step indicators
   const FormStepIndicator = () => (
     <div className="flex items-center justify-center mb-8 py-4 px-6 bg-gray-300 rounded-full shadow-md">
       <div className="flex items-center">

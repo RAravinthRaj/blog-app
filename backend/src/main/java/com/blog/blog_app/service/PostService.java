@@ -2,6 +2,7 @@ package com.blog.blog_app.service;
 
 import com.blog.blog_app.dto.PostRequest;
 import com.blog.blog_app.dto.PostResponse;
+import com.blog.blog_app.exception.ResourceNotFoundException;
 import com.blog.blog_app.model.PostModel;
 import com.blog.blog_app.model.SignUpModel;
 import com.blog.blog_app.repository.PostRepository;
@@ -339,6 +340,52 @@ public class PostService {
         return posts.stream()
                 .map(post -> convertToDto(post, userId))
                 .collect(Collectors.toList());
+    }
+
+    public void deletePost(Integer postId, Integer userId) {
+        PostModel post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "id", postId));
+
+        // Check if the post belongs to the user
+        if (post.getUser().getId() != userId) {
+            throw new RuntimeException("You are not authorized to delete this post");
+        }
+
+        postRepository.delete(post);
+    }
+
+    private PostResponse mapToPostResponse(PostModel postModel) {
+        PostResponse postResponse = new PostResponse();
+        postResponse.setId(postModel.getId());
+        postResponse.setTitle(postModel.getTitle());
+        postResponse.setExcerpt(postModel.getExcerpt());
+        postResponse.setCategory(postModel.getCategory());
+        postResponse.setCoverImage(postModel.getCoverImage());
+        postResponse.setContent(postModel.getContent());
+        postResponse.setUserId(postModel.getUser().getId());
+        postResponse.setCreatedAt(postModel.getCreatedAt());
+        postResponse.setUpdatedAt(postModel.getUpdatedAt());
+        return postResponse;
+    }
+
+    public PostResponse updatePost(PostRequest postRequest, Integer userId) {
+        // Get the post by id
+        PostModel post = postRepository.findById(postRequest.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "id", postRequest.getId()));
+
+        // Check if the post belongs to the user
+        if (post.getUser().getId() != userId) {
+            throw new RuntimeException("You are not authorized to update this post");
+        }
+
+        post.setTitle(postRequest.getTitle());
+        post.setExcerpt(postRequest.getExcerpt());
+        post.setCategory(postRequest.getCategory());
+        post.setCoverImage(postRequest.getCoverImage());
+        post.setContent(postRequest.getContent());
+
+        PostModel updatedPost = postRepository.save(post);
+        return mapToPostResponse(updatedPost);
     }
 
 }

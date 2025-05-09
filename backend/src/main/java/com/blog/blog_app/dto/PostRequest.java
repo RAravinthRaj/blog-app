@@ -1,7 +1,7 @@
 package com.blog.blog_app.dto;
 
 public class PostRequest {
-    private Integer id;
+    private int id;
     private String title;
     private String excerpt;
     private String category;

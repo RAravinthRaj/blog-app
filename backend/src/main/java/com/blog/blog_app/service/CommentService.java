@@ -59,48 +59,13 @@ public class CommentService {
         comment.setPost(post);
         comment.setUser(user);
         comment.setMessage(commentRequest.getMessage());
-        comment.setAuthor(user.getUsername()); // Set author manually if needed
+        comment.setAuthor(user.getUsername());
+        comment.setCreatedAt(comment.getCreatedAt());
+        comment.setUpdatedAt(comment.getUpdatedAt());
 
         CommentModel saved = commentRepository.save(comment);
-        return mapToResponse(saved); // Your DTO conversion method
+        return mapToResponse(saved);
     }
-
-    // @Transactional
-    // public CommentResponse createComment(CommentRequest commentRequest, Integer
-    // postId, Integer userId) {
-    // logger.info("Creating new comment for post ID: {} by user ID: {}", postId,
-    // userId);
-
-    // // Find post
-    // Optional<PostModel> postOptional = postRepository.findById(postId);
-    // if (!postOptional.isPresent()) {
-    // logger.error("Post with ID {} not found", postId);
-    // throw new RuntimeException("Post not found with id: " + postId);
-    // }
-
-    // // Find user
-    // Optional<SignUpModel> userOptional = userRepository.findById(userId);
-    // if (!userOptional.isPresent()) {
-    // logger.error("User with ID {} not found", userId);
-    // throw new RuntimeException("User not found with id: " + userId);
-    // }
-
-    // // Retrieve user and post
-    // SignUpModel user = userOptional.get();
-    // PostModel post = postOptional.get();
-
-    // // Create and save comment
-    // CommentModel comment = new CommentModel();
-    // comment.setMessage(commentRequest.getMessage());
-    // comment.setPost(post);
-    // comment.setUser(user);
-    // comment.setAuthor(user.getUsername()); // Populate the author field
-
-    // CommentModel savedComment = commentRepository.save(comment);
-    // logger.info("Comment saved successfully with ID: {}", savedComment.getId());
-
-    // return convertToDto(savedComment);
-    // }
 
     @Transactional(readOnly = true)
     public List<CommentResponse> getCommentsByPostId(Integer postId) {

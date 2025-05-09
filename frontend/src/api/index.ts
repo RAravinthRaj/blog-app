@@ -159,3 +159,20 @@ export const deletePost = async (postId: any, userId: any) => {
     throw error;
   }
 };
+
+export const updatePost = async (
+  postId: any,
+  userId: any,
+  updatedData: any
+) => {
+  try {
+    const response = await axios.put(
+      `http://localhost:8080/api/posts/${postId}?userId=${userId}`,
+      updatedData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating post:");
+    throw error;
+  }
+};

@@ -1,169 +1,146 @@
+import { Modal } from "@mui/material";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { updatePost } from "../../api";
 
-// import CloseIcon from "@mui/icons-material/Close";
+export const UpdateModal = ({ open, onClose, post }) => {
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [category, setCategory] = useState("");
+  const [coverImage, setCoverImage] = useState("");
+  const [content, setContent] = useState("");
+  const userId = parseInt(localStorage.getItem("id") || "0", 10);
 
-export default function UpdatePostModal() {
-
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setError("");
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmitUpdate = async () => {
-    // Validate form
-    const allFilled = Object.values(formData).every((val) => val.trim() !== "");
-    if (!allFilled) {
-      setError("Please fill all fields before submitting.");
-      return;
+  useEffect(() => {
+    if (post) {
+      setTitle(post.title || "");
+      setExcerpt(post.excerpt || "");
+      setCategory(post.category || "");
+      setCoverImage(post.coverImage || "");
+      setContent(post.content || "");
     }
+  }, [post]);
 
-    setLoading(true);
-    try {
-      console.log("Submitting update:", formData);
+  const categories = [
+    "Technology",
+    "Design",
+    "Business",
+    "LifeStyle",
+    "Health",
+  ];
 
-      // Replace with your actual API call
-      const response = await fetch(
-        `http://localhost:8080/api/posts/${formData.id}?userId=1`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+  const _updatePost = async () => {
+    if (
+      title.trim() !== "" &&
+      excerpt.trim() !== "" &&
+      category.trim() !== "" &&
+      coverImage.trim() !== "" &&
+      content.trim() !== ""
+    ) {
+      const updatedData = {
+        title,
+        excerpt,
+        category,
+        coverImage,
+        content,
+      };
 
-      if (!response.ok) {
-        throw new Error("Failed to update post");
+      try {
+        const updatedPost = await updatePost(post.id, userId, updatedData);
+        toast.success("Post updated successfully");
+        onClose();
+        await window.location.reload();
+      } catch (error) {
+        console.error("Error updating post:", error);
+        toast.error("Failed to update post");
       }
-
-      const result = await response.json();
-      console.log("Update successful:", result);
-      handleClose();
-    } catch (error) {
-      console.error("Error updating post:", error);
-      setError(error.message || "An error occurred while updating the post");
-    } finally {
-      setLoading(false);
+    } else {
+      toast.warn("Please enter all required fields");
     }
   };
-
   return (
-    <div>
-      <Button variant="contained" color="primary" onClick={handleClickOpen}>
-        Update Post
-      </Button>
+    <Modal open={open} onClose={onClose}>
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/20 bg-opacity-30 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 mx-2">
+          <h2 className="text-2xl font-semibold text-gray-800">Update Post</h2>
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
-        <DialogTitle>
-          Update Post
-          <IconButton
-            aria-label="close"
-            onClick={handleClose}
-            sx={{
-              position: "absolute",
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
-          >
-            {/* <CloseIcon /> */}
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Box component="form" sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="title"
-              label="Title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Updated Post Title"
+          <div className="space-y-2">
+            <label className="block text-sm text-gray-700">Title</label>
+            <input
+              type="text"
+              value={title}
+              placeholder="Title"
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800"
             />
+          </div>
 
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="excerpt"
-              label="Excerpt"
-              name="excerpt"
-              value={formData.excerpt}
-              onChange={handleChange}
-              placeholder="Updated short description of the post"
+          <div className="space-y-2">
+            <label className="block text-sm text-gray-700">Excerpt</label>
+            <textarea
+              rows={2}
+              value={excerpt}
+              placeholder="Sub-Title"
+              onChange={(e) => setExcerpt(e.target.value)}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800"
             />
+          </div>
 
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="category"
-              label="Category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              placeholder="Technology"
+          <div className="space-y-2">
+            <label className="block text-sm text-gray-700">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-2 border rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm text-gray-700">
+              Cover Image URL
+            </label>
+            <input
+              type="text"
+              value={coverImage}
+              onChange={(e) => setCoverImage(e.target.value)}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800"
             />
+          </div>
 
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="coverImage"
-              label="Cover Image URL"
-              name="coverImage"
-              value={formData.coverImage}
-              onChange={handleChange}
-              placeholder="updated-image-url.jpg"
-            />
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="content"
-              label="Content"
-              name="content"
-              multiline
+          <div className="space-y-2">
+            <label className="block text-sm text-gray-700">Content</label>
+            <textarea
               rows={4}
-              value={formData.content}
-              onChange={handleChange}
-              placeholder="Updated full content of the blog post..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800"
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="secondary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmitUpdate}
-            color="primary"
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? "Updating..." : "Submit"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 text-black rounded-md hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              onClick={() => {
+                _updatePost();
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
-}
+};

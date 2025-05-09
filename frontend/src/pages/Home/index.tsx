@@ -496,9 +496,10 @@ export const BlogApp = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-500">
-                      No comments yet. Be the first to comment!
-                    </p>
+                    <div className="text-center py-8 text-gray-500">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No comments yet. Be the first to comment!</p>
+                    </div>
                   )}
                 </div>
 
@@ -553,12 +554,19 @@ export const BlogApp = () => {
               </div>
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors cursor-pointer mb-3">
-              {post.title}
-            </h2>
-            <p className="text-gray-700 text-base leading-relaxed line-clamp-3 mb-5">
-              {post.excerpt}
-            </p>
+            <div className="bg-white rounded-2xl  mb-6 transition ">
+              <h2 className="text-xl font-bold text-black mb-2 ">
+                {post.title}
+              </h2>
+
+              <p className="text-gray-400 text-sm mb-4 -mt-2 line-clamp-2">
+                {post.excerpt}
+              </p>
+
+              <div className="text-gray-800 text-md leading-relaxed whitespace-pre-line">
+                {post.content}
+              </div>
+            </div>
 
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center justify-between w-full text-sm text-gray-500">

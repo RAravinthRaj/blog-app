@@ -2,8 +2,17 @@ import { PlusIcon, UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 import profile from "../assets/profile.png";
+import { toast } from "react-toastify";
 
 export const Navbar = () => {
+  if (
+    localStorage.getItem("id") === null ||
+    localStorage.getItem("username") === null
+  ) {
+    toast.warn("Log in to access");
+    window.location.href = "/";
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-black/50 text-white backdrop-blur-md z-100 shadow-sm">
       <div className="container mx-auto px-4 py-2 flex justify-between items-center">

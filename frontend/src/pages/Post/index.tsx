@@ -14,12 +14,17 @@ import { toggleLike } from "../../api/likesApi";
 import { HeartAnimation } from "../Home/heartAnimation";
 import user from "../../assets/profile.png";
 import LikeButton from "../../components/likes";
+import { toast } from "react-toastify";
 
 export const PostPage = () => {
+  if (
+    localStorage.getItem("id") === null ||
+    localStorage.getItem("username") === null
+  ) {
+    toast.warn("Log in to access");
+    window.location.href = "/";
+  }
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [page, setPage] = useState(1);
   const [likerIds, setLikerIds] = useState<number[]>([]);
   const [showHeart, setShowHeart] = useState(false);
   const [showFirstHeart, setShowFirstHeart] = useState(false);

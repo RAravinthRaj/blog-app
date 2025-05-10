@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import profile from "../../assets/profile.png";
 import { Navbar, Footer } from "../../components";
 import { useNavigate } from "react-router-dom";
-import { Clock, LogOutIcon, MessageCircle, Send, X } from "lucide-react";
+import { Clock, LogOutIcon, MessageCircle, Send } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   addComment,
@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { IPost } from "../../types";
 import user from "../../assets/profile.png";
 import ThreeDot from "../Profile/ThreeDot";
+import commentUser from "../../assets/comment-user.jpg";
 
 const Profile = () => {
   const [settings, setSettings] = useState({
@@ -30,7 +31,6 @@ const Profile = () => {
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -228,15 +228,46 @@ const Profile = () => {
                 <div className="space-y-3 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
                   {comments.length > 0 ? (
                     comments.map((comment, index) => (
-                      <div
-                        key={index}
-                        className="bg-white p-3 rounded-md shadow-sm border border-gray-200"
+                      <motion.div
+                        key={comment.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-white p-3 flex flex-col rounded-md shadow-sm border border-gray-200"
                       >
-                        <p className="font-semibold text-gray-800">
-                          {comment.userName}
-                        </p>
-                        <p className="text-gray-700 text-sm">{comment.text}</p>
-                      </div>
+                        <div className="flex-1 flex">
+                          <img
+                            src={commentUser}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div className="flex flex-col flex-wrap items-start gap-0">
+                            <span className="font-medium text-gray-900">
+                              {comment.userName}
+                            </span>
+
+                            <span className="text-xs text-gray-500">
+                              {(() => {
+                                try {
+                                  return format(
+                                    new Date(
+                                      comment.timestamp.replace(" ", "T")
+                                    ),
+                                    "MMM d, yyyy • h:mm a"
+                                  );
+                                } catch {
+                                  return format(
+                                    new Date(),
+                                    "MMM d, yyyy • h:mm a"
+                                  );
+                                }
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="mt-2 text-gray-700">{comment.text}</p>
+                        </div>
+                      </motion.div>
                     ))
                   ) : (
                     <p className="text-gray-500">
@@ -244,9 +275,7 @@ const Profile = () => {
                     </p>
                   )}
                 </div>
-
                 {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
                 <div className="flex justify-end mt-4">
                   <button
                     onClick={() => setOpen(false)}
